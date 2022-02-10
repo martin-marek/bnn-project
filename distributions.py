@@ -3,11 +3,7 @@ import jax.numpy as jnp
 
 
 def gaussian_log_pdf(y, mean, std):
-    # compute likelihood
-    n_samples = len(y)
-    log_likelihood = -0.5 * jnp.log(std**2 * 2 * jnp.pi) - 0.5 * ((y-mean)/std)**2
-    log_likelihood = jnp.sum(log_likelihood)
-    return log_likelihood
+    return -0.5 * jnp.log(std**2 * 2 * jnp.pi) - 0.5 * ((y-mean)/std)**2
 
 
 def make_gaussian_log_likelihood(x, y, predict_fn):
@@ -19,8 +15,10 @@ def make_gaussian_log_likelihood(x, y, predict_fn):
         std = y_hat[:, 1]
 
         # compute likelihood
-        gaussian_log_pdf(y, mean, std)
-        return gaussian_log_pdf(y, mean, std)
+        pointwise_likelihood = gaussian_log_pdf(y, mean, std)
+        total_likelihood = jnp.sum(pointwise_likelihood)
+        
+        return total_likelihood
     
     return out_fn
 

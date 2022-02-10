@@ -43,13 +43,13 @@ def ifelse(cond, val_true, val_false):
     return jax.lax.cond(cond, lambda x: x[0], lambda x: x[1], (val_true, val_false))
 
 
-def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_size=1e-4):
+def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_size=1e-4, target_accept_rate=0.23, step_size_adaptation_speed=10):
+    params_history = []
+    log_prob_history = []
     log_prob = log_prob_fn(params)
-    params_history = [params]
-    log_prob_history = [log_prob]
     
     def step(i, args):
-        params, log_prob, key = args
+        params, log_prob, n_accepted, key = args
         key, normal_key, uniform_key = jax.random.split(key, 3)
         
         # propose new parameters
@@ -61,18 +61,25 @@ def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_
         log_accept_prob = log_prob_new - log_prob
         accept_prob = jnp.minimum(1, jnp.exp(log_accept_prob))
         accept = jax.random.uniform(uniform_key) < accept_prob
+        n_accepted += accept_prob
         
         # update current position
         params = ifelse(accept, params_new, params)
         log_prob = ifelse(accept, log_prob_new, log_prob)
             
-        return params, log_prob, key
+        return params, log_prob, n_accepted, key
     
     # do large non-vectorized steps, keeping intermediate state
     for i in range(n_steps):
         
         # do small vectorized steps, discarding intermediate state
-        params, log_prob, key = jax.lax.fori_loop(0, n_blind_steps, step, (params, log_prob, key))
+        params, log_prob, n_accepted, key = jax.lax.fori_loop(0, n_blind_steps, step, (params, log_prob, 0, key))
+        acceptance_rate = n_accepted / n_blind_steps
+        print(f'{step_size=:.2e}, {acceptance_rate=:.2f}')
+        
+        # update step size
+        if target_accept_rate > 0 and step_size_adaptation_speed > 0:
+            step_size *= jnp.exp(step_size_adaptation_speed * (acceptance_rate - target_accept_rate))
         
         # store current params
         params_history.append(params)
@@ -106,9 +113,9 @@ def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
     return new_params, new_momentum
 
 
-def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, target_accept_rate=0, step_size_adaptation_speed=0):
-    params_history = [params]
-    log_prob_history = [log_prob_fn(params)]
+def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, target_accept_rate=0.8, step_size_adaptation_speed=1):
+    params_history = []
+    log_prob_history = []
 
     for i in range(n_steps):
         key, normal_key, uniform_key = jax.random.split(key, 3)
@@ -124,14 +131,13 @@ def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, 
         kinetic_energy_diff = 0.5*sum([jnp.sum(m1**2-m2**2) for m1, m2 in zip(jax.tree_leaves(momentum), jax.tree_leaves(new_momentum))])
         log_accept_prob = potentaial_energy_diff + kinetic_energy_diff
         accept_prob = jnp.minimum(1, jnp.exp(log_accept_prob))
-        print(accept_prob)
+        print(f'{step_size=:.2e}, {accept_prob=:.2f}')
         if jax.random.uniform(uniform_key) < accept_prob:
             params = new_params
         
         # update step size
         if target_accept_rate > 0 and step_size_adaptation_speed > 0:
-            scale_factor = jnp.exp(step_size_adaptation_speed * (accept_prob - target_accept_rate))
-            step_size *= scale_factor
+            step_size *= jnp.exp(step_size_adaptation_speed * (accept_prob - target_accept_rate))
         
         # store current params
         params_history.append(params)
