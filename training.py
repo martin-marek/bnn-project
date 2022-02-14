@@ -39,10 +39,6 @@ def normal_like_tree(a, key):
     return noise, all_keys[0]
 
 
-def ifelse(cond, val_true, val_false):
-    return jax.lax.cond(cond, lambda x: x[0], lambda x: x[1], (val_true, val_false))
-
-
 def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_size=1e-4, target_accept_rate=0.23, step_size_adaptation_speed=10):
     params_history = []
     log_prob_history = []
@@ -64,8 +60,8 @@ def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_
         n_accepted += accept_prob
         
         # update current position
-        params = ifelse(accept, params_new, params)
-        log_prob = ifelse(accept, log_prob_new, log_prob)
+        params = jnp.where(accept, params_new, params)
+        log_prob = jnp.where(accept, log_prob_new, log_prob)
             
         return params, log_prob, n_accepted, key
     
