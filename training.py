@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+from jax.flatten_util import ravel_pytree
 from jax.example_libraries import optimizers
 
 
@@ -31,6 +32,10 @@ def train_sgd(params, log_likelihood_fn, n_epochs=1_000, lr=1e-5, m=0.9):
     return params_final, loss_history
 
 
+def ifelse(cond, val_true, val_false):
+    return jax.lax.cond(cond, lambda x: x[0], lambda x: x[1], (val_true, val_false))
+
+
 def normal_like_tree(a, key):
     treedef = jax.tree_structure(a)
     num_vars = len(jax.tree_leaves(a))
@@ -39,13 +44,17 @@ def normal_like_tree(a, key):
     return noise, all_keys[0]
 
 
-def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_size=1e-4, target_accept_rate=0.23, step_size_adaptation_speed=10):
-    params_history = []
-    log_prob_history = []
-    log_prob = log_prob_fn(params)
+def update_step_size(step_size, accept_prob, target_accept_rate=0, step_size_adaptation_speed=10):
+    if target_accept_rate > 0 and step_size_adaptation_speed > 0:
+        step_size *= jnp.exp(step_size_adaptation_speed * (accept_prob - target_accept_rate))
+    return step_size
+   
+
+def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_size=1e-4, target_accept_rate=0.23, step_size_adaptation_speed=0.1):
     
-    def step(i, args):
-        params, log_prob, n_accepted, key = args
+    # define a step that doesn't keep history
+    def step_without_history(i, args):
+        params, log_prob, step_size, total_accept_prob, key = args
         key, normal_key, uniform_key = jax.random.split(key, 3)
         
         # propose new parameters
@@ -56,32 +65,44 @@ def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_
         log_prob_new = log_prob_fn(params_new)
         log_accept_prob = log_prob_new - log_prob
         accept_prob = jnp.minimum(1, jnp.exp(log_accept_prob))
+        total_accept_prob += accept_prob
         accept = jax.random.uniform(uniform_key) < accept_prob
-        n_accepted += accept_prob
-        
-        # update current position
-        params = jnp.where(accept, params_new, params)
-        log_prob = jnp.where(accept, log_prob_new, log_prob)
-            
-        return params, log_prob, n_accepted, key
-    
-    # do large non-vectorized steps, keeping intermediate state
-    for i in range(n_steps):
-        
-        # do small vectorized steps, discarding intermediate state
-        params, log_prob, n_accepted, key = jax.lax.fori_loop(0, n_blind_steps, step, (params, log_prob, 0, key))
-        acceptance_rate = n_accepted / n_blind_steps
-        print(f'{step_size=:.2e}, {acceptance_rate=:.2f}')
+        params = ifelse(accept, params_new, params)
+        log_prob = ifelse(accept, log_prob_new, log_prob)
         
         # update step size
-        if target_accept_rate > 0 and step_size_adaptation_speed > 0:
-            step_size *= jnp.exp(step_size_adaptation_speed * (acceptance_rate - target_accept_rate))
+        step_size = update_step_size(step_size, accept_prob, target_accept_rate, step_size_adaptation_speed)
         
-        # store current params
-        params_history.append(params)
-        log_prob_history.append(log_prob)
+        return params, log_prob, step_size, total_accept_prob, key
     
-    return params_history, jnp.array(log_prob_history)
+    # define a step that keeps history
+    def step_with_history(i, args):
+        params, params_history, step_size, total_accept_prob, key = args
+        
+        # do 'n_blind_steps', without keeping history
+        log_prob = log_prob_fn(params)
+        params, log_prob, step_size, inner_total_accept_prob, key = jax.lax.fori_loop(0, n_blind_steps, step_without_history, (params, log_prob, step_size, 0, key))
+        total_accept_prob += inner_total_accept_prob / n_blind_steps
+        
+        # store history
+        params_raveled, _ = ravel_pytree(params)
+        params_history = params_history.at[0].set(params_raveled)
+              
+        return params, params_history, step_size, total_accept_prob, key
+    
+    # ravel params
+    params_raveled, unravel_fn = ravel_pytree(params)
+    
+    # do 'n_steps'
+    params_history_raveled = jnp.zeros([n_steps]+list(params_raveled.shape))
+    params_history_raveled = params_history_raveled.at[0].set(params_raveled)
+    _, params_history_raveled, step_size, total_accept_prob, key = jax.lax.fori_loop(1, n_steps, step_with_history, (params, params_history_raveled, step_size, 0, key))
+    
+    # unravel params
+    params_history_unraveled = [unravel_fn(params_raveled) for params_raveled in params_history_raveled]
+    
+    print(f'Avg. accept. prob.: {(total_accept_prob/n_steps):.2%}')
+    return params_history_unraveled
 
 
 def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
@@ -110,10 +131,10 @@ def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
 
 
 def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, target_accept_rate=0.8, step_size_adaptation_speed=1):
-    params_history = []
-    log_prob_history = []
 
-    for i in range(n_steps):
+    # define a single step
+    def step(i, args):
+        params, params_history, step_size, total_accept_prob, key = args
         key, normal_key, uniform_key = jax.random.split(key, 3)
 
         # generate random momentum
@@ -127,16 +148,29 @@ def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, 
         kinetic_energy_diff = 0.5*sum([jnp.sum(m1**2-m2**2) for m1, m2 in zip(jax.tree_leaves(momentum), jax.tree_leaves(new_momentum))])
         log_accept_prob = potentaial_energy_diff + kinetic_energy_diff
         accept_prob = jnp.minimum(1, jnp.exp(log_accept_prob))
-        print(f'{step_size=:.2e}, {accept_prob=:.2f}')
-        if jax.random.uniform(uniform_key) < accept_prob:
-            params = new_params
+        total_accept_prob += accept_prob
+        accept = jax.random.uniform(uniform_key) < accept_prob
+        params = ifelse(accept, new_params, params)
+        
+        # store history
+        params_raveled, _ = ravel_pytree(params)
+        params_history = params_history.at[0].set(params_raveled)
         
         # update step size
-        if target_accept_rate > 0 and step_size_adaptation_speed > 0:
-            step_size *= jnp.exp(step_size_adaptation_speed * (accept_prob - target_accept_rate))
+        step_size = update_step_size(step_size, accept_prob, target_accept_rate, step_size_adaptation_speed)
         
-        # store current params
-        params_history.append(params)
-        log_prob_history.append(log_prob_fn(params))
+        return params, params_history, step_size, total_accept_prob, key
     
-    return params_history, jnp.array(log_prob_history)
+    # ravel params
+    params_raveled, unravel_fn = ravel_pytree(params)
+    
+    # do 'n_steps'
+    params_history_raveled = jnp.zeros([n_steps]+list(params_raveled.shape))
+    params_history_raveled = params_history_raveled.at[0].set(params_raveled)
+    _, params_history_raveled, step_size, total_accept_prob, key = jax.lax.fori_loop(1, n_steps, step, (params, params_history_raveled, step_size, 0, key))
+    
+    # unravel params
+    params_history_unraveled = [unravel_fn(params_raveled) for params_raveled in params_history_raveled]
+    
+    print(f'Avg. accept. prob.: {(total_accept_prob/n_steps):.2%}')
+    return params_history_unraveled
