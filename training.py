@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+from jax.tree_util import tree_flatten
 from jax.flatten_util import ravel_pytree
 from jax.example_libraries import optimizers
 
@@ -44,6 +45,14 @@ def normal_like_tree(a, key):
     return noise, all_keys[0]
 
 
+def ravel_pytree_(pytree):
+    """Ravels a pytree like `jax.flatten_util.ravel_pytree`
+    but doesn't return a function for unraveling."""
+    leaves, treedef = tree_flatten(pytree)
+    flat = jnp.concatenate([jnp.ravel(x) for x in leaves])
+    return flat
+
+
 def update_step_size(step_size, accept_prob, target_accept_rate=0, step_size_adaptation_speed=10):
     if target_accept_rate > 0 and step_size_adaptation_speed > 0:
         step_size *= jnp.exp(step_size_adaptation_speed * (accept_prob - target_accept_rate))
@@ -84,9 +93,9 @@ def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_
         params, log_prob, step_size, inner_total_accept_prob, key = jax.lax.fori_loop(0, n_blind_steps, step_without_history, (params, log_prob, step_size, 0, key))
         total_accept_prob += inner_total_accept_prob / n_blind_steps
         
-        # store history
-        params_raveled, _ = ravel_pytree(params)
-        params_history = params_history.at[0].set(params_raveled)
+        # ravel and store params
+        params_raveled = ravel_pytree_(params)
+        params_history = params_history.at[i].set(params_raveled)
               
         return params, params_history, step_size, total_accept_prob, key
     
@@ -153,8 +162,8 @@ def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, 
         params = ifelse(accept, new_params, params)
         
         # store history
-        params_raveled, _ = ravel_pytree(params)
-        params_history = params_history.at[0].set(params_raveled)
+        params_raveled = ravel_pytree_(params)
+        params_history = params_history.at[i].set(params_raveled)
         
         # update step size
         step_size = update_step_size(step_size, accept_prob, target_accept_rate, step_size_adaptation_speed)
