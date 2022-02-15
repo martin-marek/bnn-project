@@ -103,9 +103,8 @@ def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_
     params_raveled, unravel_fn = ravel_pytree(params)
     
     # do 'n_steps'
-    params_history_raveled = jnp.zeros([n_steps]+list(params_raveled.shape))
-    params_history_raveled = params_history_raveled.at[0].set(params_raveled)
-    _, params_history_raveled, step_size, total_accept_prob, key = jax.lax.fori_loop(1, n_steps, step_with_history, (params, params_history_raveled, step_size, 0, key))
+    params_history_raveled = jnp.zeros([n_steps, len(params_raveled)])
+    _, params_history_raveled, step_size, total_accept_prob, key = jax.lax.fori_loop(0, n_steps, step_with_history, (params, params_history_raveled, step_size, 0, key))
     
     # unravel params
     params_history_unraveled = [unravel_fn(params_raveled) for params_raveled in params_history_raveled]
@@ -174,9 +173,8 @@ def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, 
     params_raveled, unravel_fn = ravel_pytree(params)
     
     # do 'n_steps'
-    params_history_raveled = jnp.zeros([n_steps]+list(params_raveled.shape))
-    params_history_raveled = params_history_raveled.at[0].set(params_raveled)
-    _, params_history_raveled, step_size, total_accept_prob, key = jax.lax.fori_loop(1, n_steps, step, (params, params_history_raveled, step_size, 0, key))
+    params_history_raveled = jnp.zeros([n_steps, len(params_raveled)])
+    _, params_history_raveled, step_size, total_accept_prob, key = jax.lax.fori_loop(0, n_steps, step, (params, params_history_raveled, step_size, 0, key))
     
     # unravel params
     params_history_unraveled = [unravel_fn(params_raveled) for params_raveled in params_history_raveled]
