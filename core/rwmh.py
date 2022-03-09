@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
-from utils import ifelse, normal_like_tree, ravel_pytree_
+from .utils import ifelse, normal_like_tree, ravel_pytree_
    
 
 def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_size=1e-4):
@@ -12,7 +12,7 @@ def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_
         key, normal_key, uniform_key = jax.random.split(key, 3)
         
         # propose new parameters
-        step, _ = normal_like_tree(params, normal_key)
+        step = normal_like_tree(params, normal_key)
         params_new = jax.tree_multimap(lambda a, b: a + step_size * b, params, step)
         
         # decide whether to accept new position

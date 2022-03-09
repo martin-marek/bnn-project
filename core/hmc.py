@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
-from utils import ifelse, normal_like_tree, ravel_pytree_
+from .utils import ifelse, normal_like_tree, ravel_pytree_
 
 
 def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
@@ -29,7 +29,7 @@ def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
     return new_params, new_momentum
 
 
-def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, target_accept_rate=0.8, step_size_adaptation_speed=1):
+def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key):
 
     # define a single step
     def step(i, args):
@@ -37,7 +37,7 @@ def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key, 
         key, normal_key, uniform_key = jax.random.split(key, 3)
 
         # generate random momentum
-        momentum, _ = normal_like_tree(params, normal_key)
+        momentum = normal_like_tree(params, normal_key)
 
         # leapfrog
         new_params, new_momentum = leapfrog(params, momentum, log_prob_fn, step_size, n_leapfrog_steps)

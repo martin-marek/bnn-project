@@ -1,5 +1,6 @@
 import jax
 import haiku as hk
+from .utils import normal_like_tree
 
 
 def make_mlp_fn(layer_dims, output_dim):
@@ -37,10 +38,11 @@ def make_predict_fn(net):
     return predict_fn
 
 
-def make_nn(x, layer_dims=[100, 100, 100], output_dim=2):
+def make_nn(key, x, layer_dims=[10, 10, 10], output_dim=2, stdev=1):
     net_fn = make_mlp_fn(layer_dims, output_dim)
     net = hk.transform_with_state(net_fn)
-    key, net_init_key = jax.random.split(jax.random.PRNGKey(0), 2)
-    params, _ = net.init(net_init_key, x)
+    params, _ = net.init(key, x)
+    params = normal_like_tree(params, key)
+    params = jax.tree_map(lambda x: stdev*x, params)
     predict_fn = make_predict_fn(net)
     return predict_fn, params

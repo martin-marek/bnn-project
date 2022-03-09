@@ -1,8 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
-from utils import ifelse, normal_like_tree, ravel_pytree_
-
+from .utils import ifelse, normal_like_tree, ravel_pytree_
 
 def is_power_of_two(n):
     # https://stackoverflow.com/a/57025941/6495494
@@ -96,15 +95,9 @@ def satisfies_detailed_balance(s, v, log_u, log_prob_fn):
 def is_u_turn(s_fwd, v_fwd, s_bwd, v_bwd, direction):
     """Ref. [1], eq. (9)."""
 
-    # flatten inputs
-    s_fwd_raveled = ravel_pytree_(s_fwd)
-    v_fwd_raveled = ravel_pytree_(v_fwd)
-    s_bwd_raveled = ravel_pytree_(s_bwd)
-    v_bwd_raveled = ravel_pytree_(v_bwd)
-
     # check for a U-turn in both directions
-    stop_fwd = direction*jnp.dot((s_fwd_raveled - s_bwd_raveled), v_bwd_raveled) < 0
-    stop_bwd = direction*jnp.dot((s_fwd_raveled - s_bwd_raveled), v_fwd_raveled) < 0
+    stop_fwd = direction*jnp.dot((s_fwd - s_bwd), v_bwd) < 0
+    stop_bwd = direction*jnp.dot((s_fwd - s_bwd), v_fwd) < 0
 
     return stop_fwd | stop_bwd
 
@@ -120,7 +113,7 @@ def check_uturns(s_fwd, v_fwd, i, checkpoints, direction):
     def step(j, stop):
         s_bwd = checkpoints[j, 0]
         v_bwd = checkpoints[j, 1]
-        stop |= is_u_turn(s_fwd, v_fwd, s_bwd, v_bwd, direction)
+        stop |= is_u_turn(ravel_pytree_(s_fwd), ravel_pytree_(v_fwd), s_bwd, v_bwd, direction)
         return stop
     stop = jax.lax.fori_loop(first_idx, last_idx+1, step, False)
 
@@ -164,7 +157,12 @@ def make_nuts_step(log_prob_fn, step_size, max_leapfrog_steps):
         s_rand, v_rand = s, v
 
         # sample slice variable
-        # u ~ Unif[0, a], so log(u) ~ log(a) - z, where z ~ Exp(1)
+        # - to avoid underflow, log(u) has to be used instead of u
+        # - here's a derivation of the distribution of log(u)
+        #   - u ~ Unif[0, a]
+        #   - let x = u/a => x ~ Unif[0, 1]
+        #   - let y = -log(x) => y ~ Exp(1)
+        #   - log(u) = log(a*x) = log(a) - (-log(x)) = log(a) - y
         log_u = (log_prob_fn(s) - kinetic_energy_fn(v)) - jax.random.exponential(key)
 
         # 'stop' will store the reason NUTS has terminated
@@ -173,36 +171,40 @@ def make_nuts_step(log_prob_fn, step_size, max_leapfrog_steps):
         # - 2: approx. error too large
         stop = jnp.zeros([3], dtype=bool)
 
+        # when the tree doubles
+        # - the direction has to be resampled and it might change
+        # - if the direction changes, the current tree needs to be flipped
+        def double_tree(args):
+            direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, dir_key = args
+
+            # resample direction
+            new_direction = 2*jax.random.bernoulli(dir_key) - 1
+            direction_changed = new_direction == direction
+            direction = new_direction
+        
+            # if direction changed, flip the tree
+            s_fwd, s_bwd = ifelse(direction_changed, (s_bwd, s_fwd), (s_fwd, s_bwd))
+            v_fwd, v_bwd = ifelse(direction_changed, (v_bwd, v_fwd), (v_fwd, v_bwd))
+
+            # update checkpoints
+            # - regardless of the current direction, the only relevant
+            #   checkpoint from the previous subtree is the outer-most one
+            # - this is always denoted 'bwd' in the new tree
+            checkpoints = checkpoints.at[0, 0].set(ravel_pytree_(s_bwd))
+            checkpoints = checkpoints.at[0, 1].set(ravel_pytree_(v_bwd))
+
+            return direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, dir_key
+
         # define a single leapgfrog step with all overhead logic (eg storing intermediate state, stopping condition)
         def step(args):
             i, s_rand, v_rand, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, direction, n_valid_samples, stop, key = args
             key, dir_key, error_key, keep_key = jax.random.split(key, 4)
 
             # if the current step is a power of 2, the tree is about to doble
-            # - the direction has to be resampled and it might change
-            # - if the direction changes, the current tree needs to be flipped
-            def double_tree(args):
-                direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints = args
-
-                # resample direction
-                new_direction = 2*jax.random.bernoulli(dir_key) - 1
-                direction_changed = new_direction == direction
-                direction = new_direction
-            
-                # if direction changed, flip the tree
-                s_fwd, s_bwd = ifelse(direction_changed, (s_bwd, s_fwd), (s_fwd, s_bwd))
-                v_fwd, v_bwd = ifelse(direction_changed, (v_bwd, v_fwd), (v_fwd, v_bwd))
-
-                # update checkpoints
-                # - regardless of the current direction, the only relevant
-                #   checkpoint from the previous subtree is the outer-most one
-                # - this is always denoted 'bwd' in the new tree
-                checkpoints = checkpoints.at[0, 0].set(s_bwd)
-                checkpoints = checkpoints.at[0, 1].set(v_bwd)
-
-                return direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints
             tree_has_doubled = is_power_of_two(i)
-            direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints = jax.lax.cond(tree_has_doubled, double_tree, lambda x: x, (direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints))
+            args = direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, dir_key
+            args = jax.lax.cond(tree_has_doubled, double_tree, lambda x: x, args)
+            direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, _ = args
 
             # leapfrog
             # - if 'direction=-1', will run backwards in time
@@ -214,7 +216,7 @@ def make_nuts_step(log_prob_fn, step_size, max_leapfrog_steps):
 
             # update checkpoints
             # - this only needs to be done if i is even, but for simplicity, here it is always done
-            checkpoints = save_checkpoint(s_fwd, v_fwd, i, checkpoints)
+            checkpoints = save_checkpoint(ravel_pytree_(s_fwd), ravel_pytree_(v_fwd), i, checkpoints)
 
             # check if leapfrog error is too large
             error_too_large = approx_error_too_large(s, v, log_u, log_prob_fn)
@@ -280,8 +282,7 @@ def nuts(s, log_prob_fn, step_size, key, n_steps=100, max_leapfrog_steps=16_384)
         s = ifelse(accept, s_new, s)
 
         # store history
-        s_raveled = ravel_pytree_(s)
-        s_history = s_history.at[i].set(s_raveled)
+        s_history = s_history.at[i].set(ravel_pytree_(s))
         total_accept_prob += accept_prob
         total_steps_taken += n_steps_taken
         total_valid_samples += n_valid_samples
