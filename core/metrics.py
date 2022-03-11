@@ -24,7 +24,6 @@ def autocorr(chains, f=None, n_lags=20):
         return r
 
     # compute autocovariance for each chain and feature separately
-    n_lags = 20
     r = jnp.zeros([M, n_lags, B])
     r = r.at[:, 0, :].set(1)
     r = jax.lax.fori_loop(1, n_lags, step, r)
