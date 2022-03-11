@@ -4,7 +4,7 @@ from jax.flatten_util import ravel_pytree
 from .utils import ifelse, normal_like_tree, ravel_pytree_
    
 
-def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_size=1e-4):
+def rwmh_sampler(params, log_prob_fn, key, n_steps, n_blind_steps, step_size):
     
     # define a step that doesn't keep history
     def step_without_history(i, args):
@@ -47,9 +47,10 @@ def rwmh_sampler(params, log_prob_fn, key, n_steps=100, n_blind_steps=100, step_
     # do 'n_steps'
     params_history_raveled = jnp.zeros([n_steps, len(params_raveled)])
     _, params_history_raveled, total_accept_prob, key = jax.lax.fori_loop(0, n_steps, step_with_history, (params, params_history_raveled, 0, key))
-    
+    avg_accept_prob = total_accept_prob/n_steps
+
     # unravel params
     params_history_unraveled = [unravel_fn(params_raveled) for params_raveled in params_history_raveled]
     
-    print(f'Avg. accept. prob.: {(total_accept_prob/n_steps):.2%}')
-    return params_history_unraveled
+    # print(f'Avg. accept. prob.: {(total_accept_prob/n_steps):.2%}')
+    return params_history_unraveled, avg_accept_prob

@@ -29,7 +29,7 @@ def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
     return new_params, new_momentum
 
 
-def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key):
+def hmc_sampler(params, log_prob_fn, key, n_steps, n_leapfrog_steps, step_size):
 
     # define a single step
     def step(i, args):
@@ -63,9 +63,10 @@ def hmc_sampler(params, log_prob_fn, n_steps, n_leapfrog_steps, step_size, key):
     # do 'n_steps'
     params_history_raveled = jnp.zeros([n_steps, len(params_raveled)])
     _, params_history_raveled, total_accept_prob, key = jax.lax.fori_loop(0, n_steps, step, (params, params_history_raveled, 0, key))
+    avg_accept_prob = total_accept_prob/n_steps
     
     # unravel params
     params_history_unraveled = [unravel_fn(params_raveled) for params_raveled in params_history_raveled]
     
-    print(f'Avg. accept. prob.: {(total_accept_prob/n_steps):.2%}')
-    return params_history_unraveled
+    # print(f'Avg. accept. prob.: {(total_accept_prob/n_steps):.2%}')
+    return params_history_unraveled, avg_accept_prob
