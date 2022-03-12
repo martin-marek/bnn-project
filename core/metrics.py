@@ -17,8 +17,8 @@ def autocorr(chains, f=None, n_lags=20):
         a = y[:, n_lags:, :]
         b = jnp.roll(y, i, axis=1)[:, n_lags:, :]
         cov = ((a - a.mean(axis=1, keepdims=True)) * (b - b.mean(axis=1, keepdims=True))).mean(axis=1)
-        a_std = jnp.sqrt((a**2).mean(axis=1) - a.mean(axis=1)**2)
-        b_std = jnp.sqrt((b**2).mean(axis=1) - b.mean(axis=1)**2)
+        a_std = a.std(axis=1)
+        b_std = b.std(axis=1)
         cor = cov / (a_std*b_std)
         r = r.at[:, i, :].set(cor)
         return r
