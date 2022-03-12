@@ -9,7 +9,7 @@ from .utils import ravel_pytree_ as ravel_fn
 
 
 def chain_to_arr(chain):
-   return jnp.array([ravel_fn(node) for node in chain])
+    return jnp.array([ravel_fn(node) for node in chain])
 
 
 def initialize_params(key, params, sd):
@@ -24,7 +24,7 @@ def vmap_over_keys(f, key, n):
     return jax.vmap(f)(keys)
 
 
-def create_sgd_chains(key, log_likelihood_fn, params_init, init_sd, n_epochs, ll_start, ll_stop, n_chains, n_samples):
+def create_sgd_chains(key, log_likelihood_fn, params_init, init_sd, n_epochs, ll_start, ll_stop, n_chains):
     def create_chain(key):
         init_key, mcmc_key = jax.random.split(key, 2)
         params = initialize_params(init_key, params_init, init_sd)
@@ -73,3 +73,9 @@ def create_mixed_chains(key, log_likelihood_fn, params_init, init_sd, n_epochs, 
     chains = chains.reshape([n_chains, n_outer_steps*n_inner_steps, -1])
     return chains, avg_accept_prob
 
+
+def create_sgd_ensambles(key, log_likelihood_fn, params_init, init_sd, n_epochs, ll_start, ll_stop, n_chains, n_samples):
+    chains, _ = create_sgd_chains(key, log_likelihood_fn, params_init, init_sd, n_epochs, ll_start, ll_stop, n_chains*n_samples)
+    chains = chains.reshape([n_chains, n_samples, -1])
+    return chains
+    
