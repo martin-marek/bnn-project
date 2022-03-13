@@ -16,10 +16,10 @@ def autocorr(chains, f=None, n_lags=20):
     def step(i, r):
         a = y[:, n_lags:, :]
         b = jnp.roll(y, i, axis=1)[:, n_lags:, :]
-        cov = ((a - a.mean(axis=1, keepdims=True)) * (b - b.mean(axis=1, keepdims=True))).mean(axis=1)
-        a_std = a.std(axis=1)
-        b_std = b.std(axis=1)
-        cor = cov / (a_std*b_std)
+        cov_ab = ((a - a.mean(axis=[0, 1], keepdims=True)) * (b - b.mean(axis=[0, 1], keepdims=True))).mean(axis=1)
+        var_a = ((a - a.mean(axis=[0, 1], keepdims=True))**2).mean(axis=1)
+        var_b = ((b - a.mean(axis=[0, 1], keepdims=True))**2).mean(axis=1)
+        cor = cov_ab / jnp.sqrt(var_a*var_b)
         r = r.at[:, i, :].set(cor)
         return r
 
