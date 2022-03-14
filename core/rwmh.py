@@ -12,7 +12,7 @@ def rwmh_sampler(key, params, log_prob_fn, n_steps, n_blind_steps, step_size):
         
         # propose new parameters
         step = step_size*jax.random.normal(normal_key, params.shape)
-        params_new = params + step_size*step
+        params_new = params + step
         
         # decide whether to accept new position
         log_prob_new = log_prob_fn(params_new)
