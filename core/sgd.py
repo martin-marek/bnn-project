@@ -1,8 +1,10 @@
 import jax
 import jax.numpy as jnp
+from functools import partial
 
 
-def train_sgd(params, log_likelihood_fn, n_epochs=100_000, lr_start=1e-3, lr_stop=1e-8, m=0):
+def train_sgd(params, log_likelihood_fn, n_epochs, lr_start, lr_stop):
+    
     # define negative-log-likelihood loss
     def loss_fn(params):
         return -log_likelihood_fn(params)

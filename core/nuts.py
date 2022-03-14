@@ -127,11 +127,8 @@ def save_checkpoint(s, v, i, checkpoints):
     return checkpoints
 
 
-def make_nuts_step(log_prob_fn, step_size, max_leapfrog_steps):
+def make_nuts_step(log_prob_fn, step_size, max_depth):
 
-    # compute depth of tree with 'max_leapfrog_steps' (required for jit tracing)
-    max_depth = (jnp.ceil(jnp.log2(max_leapfrog_steps))).astype(jnp.int32)
-    
     def nuts_step(s, v, key, step_size):
         """
         Runs one iteration of NUTS and proposes a new (params, momentum) pair.
@@ -223,7 +220,7 @@ def make_nuts_step(log_prob_fn, step_size, max_leapfrog_steps):
             stop = stop.at[2].set(error_too_large)
 
             # check if we reached the maximum number of steps
-            max_steps_reached = i == (max_leapfrog_steps - 1)
+            max_steps_reached = i == (2**max_depth - 1)
             stop = stop.at[0].set(max_steps_reached)
 
             # update output state
@@ -256,11 +253,11 @@ def make_nuts_step(log_prob_fn, step_size, max_leapfrog_steps):
     return nuts_step
 
 
-def nuts(s, log_prob_fn, step_size, key, n_steps=100, max_leapfrog_steps=16_384):
+def nuts_sampler(key, s, log_prob_fn, n_steps, step_size, max_depth):
     """Runs the No-U-Turn Sampler (NUTS) variant of HMC for n_steps."""
 
     # make a function that will compute one step of the NUTs algorithm
-    nuts_step = make_nuts_step(log_prob_fn, step_size, max_leapfrog_steps)
+    nuts_step = make_nuts_step(log_prob_fn, step_size, max_depth)
 
     # make a function that will compute one step of the Metropolis–Hastings algorithm, using NUTS proposals
     def step(i, args):
@@ -309,6 +306,6 @@ def nuts(s, log_prob_fn, step_size, key, n_steps=100, max_leapfrog_steps=16_384)
     # - the output chain is converted from a 2D array to a list of pytrees
     s_history_unraveled = [unravel_fn(s_raveled) for s_raveled in s_history_raveled]
     
-    print(f'{(total_steps_taken/n_steps):.2f} steps, {(total_valid_samples/total_steps_taken):.2%} valid, {(total_accept_prob/n_steps):.2%} acceptance.')
-    print(f'Termination: max_steps={total_stops[0]}, u-turn={total_stops[1]}, max_error={total_stops[2]}.')
-    return s_history_unraveled
+    # print(f'Termination: max_steps={total_stops[0]}, u-turn={total_stops[1]}, max_error={total_stops[2]}.')
+    ratio_valid_samples = total_valid_samples/total_steps_taken
+    return s_history_unraveled, ratio_valid_samples, total_stops

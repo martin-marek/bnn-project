@@ -4,7 +4,7 @@ from jax.flatten_util import ravel_pytree
 from .utils import ifelse, normal_like_tree, ravel_pytree_
    
 
-def rwmh_sampler(params, log_prob_fn, key, n_steps, n_blind_steps, step_size):
+def rwmh_sampler(key, params, log_prob_fn, n_steps, n_blind_steps, step_size):
     
     # define a step that doesn't keep history
     def step_without_history(i, args):

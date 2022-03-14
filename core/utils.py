@@ -21,3 +21,10 @@ def ravel_pytree_(pytree):
     leaves, treedef = tree_flatten(pytree)
     flat = jnp.concatenate([jnp.ravel(x) for x in leaves])
     return flat
+
+
+def pmap_(f, shard_args, distr_args):
+    # pmaps a function over `shard_args`, reusing `distr_args`
+    def g(*shard_args):
+        return f(*shard_args, *distr_args)
+    return jax.pmap(g)(*shard_args)
