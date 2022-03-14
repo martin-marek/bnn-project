@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
-from .utils import ifelse, normal_like_tree, ravel_pytree_
+from .utils import ifelse
 
 def is_power_of_two(n):
     # https://stackoverflow.com/a/57025941/6495494
@@ -113,7 +113,7 @@ def check_uturns(s_fwd, v_fwd, i, checkpoints, direction):
     def step(j, stop):
         s_bwd = checkpoints[j, 0]
         v_bwd = checkpoints[j, 1]
-        stop |= is_u_turn(ravel_pytree_(s_fwd), ravel_pytree_(v_fwd), s_bwd, v_bwd, direction)
+        stop |= is_u_turn(s_fwd, v_fwd, s_bwd, v_bwd, direction)
         return stop
     stop = jax.lax.fori_loop(first_idx, last_idx+1, step, False)
 
@@ -138,13 +138,11 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
 
         # create a 'checkpoints' vector to store intermediate nodes in the chain
         # - in the second dimension, index 0 stores s, index 1 stores v
-        s_raveled = ravel_pytree_(s)
-        v_raveled = ravel_pytree_(v)
-        checkpoints = jnp.zeros([max_depth, 2, len(s_raveled)])
+        checkpoints = jnp.zeros([max_depth, 2, len(s)])
 
         # checkpoint current state
-        checkpoints = checkpoints.at[0, 0].set(s_raveled)
-        checkpoints = checkpoints.at[0, 1].set(v_raveled)
+        checkpoints = checkpoints.at[0, 0].set(s)
+        checkpoints = checkpoints.at[0, 1].set(v)
 
         # store the leftmost and rightmost state (currently the same state)
         s_fwd, v_fwd = s, v
@@ -187,8 +185,8 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
             # - regardless of the current direction, the only relevant
             #   checkpoint from the previous subtree is the outer-most one
             # - this is always denoted 'bwd' in the new tree
-            checkpoints = checkpoints.at[0, 0].set(ravel_pytree_(s_bwd))
-            checkpoints = checkpoints.at[0, 1].set(ravel_pytree_(v_bwd))
+            checkpoints = checkpoints.at[0, 0].set(s_bwd)
+            checkpoints = checkpoints.at[0, 1].set(v_bwd)
 
             return direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, dir_key
 
@@ -213,7 +211,7 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
 
             # update checkpoints
             # - this only needs to be done if i is even, but for simplicity, here it is always done
-            checkpoints = save_checkpoint(ravel_pytree_(s_fwd), ravel_pytree_(v_fwd), i, checkpoints)
+            checkpoints = save_checkpoint(s_fwd, v_fwd, i, checkpoints)
 
             # check if leapfrog error is too large
             error_too_large = approx_error_too_large(s, v, log_u, log_prob_fn)
@@ -265,7 +263,7 @@ def nuts_sampler(key, s, log_prob_fn, n_steps, step_size, max_depth):
         key, v_key, nuts_key, accept_key = jax.random.split(key, 4)
 
         # sample momentum
-        v = normal_like_tree(s, v_key)
+        v = jax.random.normal(v_key, s.shape)
 
         # propose new params and momentum
         s_new, v_new, n_steps_taken, n_valid_samples, stop = nuts_step(s, v, key, step_size)
@@ -279,33 +277,24 @@ def nuts_sampler(key, s, log_prob_fn, n_steps, step_size, max_depth):
         s = ifelse(accept, s_new, s)
 
         # store history
-        s_history = s_history.at[i].set(ravel_pytree_(s))
+        s_history = s_history.at[i].set(s)
         total_accept_prob += accept_prob
         total_steps_taken += n_steps_taken
         total_valid_samples += n_valid_samples
         total_stops += stop
          
         return s, s_history, total_accept_prob, total_steps_taken, total_valid_samples, total_stops, key
-
-    # ravel params
-    # - params are reshaped from a pytree to a 1D array
-    # - this is required to run HMC in a lax for loop
-    s_raveled, unravel_fn = ravel_pytree(s)
     
     # do 'n_steps'
     # - `params` is a pytree of the current parameters
     # - `params_history_raveled` is the output chain represented as a 2D array
-    s_history_raveled = jnp.zeros([n_steps, len(s_raveled)])
+    s_history = jnp.zeros([n_steps, len(s)])
     total_stops = jnp.zeros([3], dtype=jnp.int32)
-    args = s, s_history_raveled, 0, 0, 0, total_stops, key
+    args = s, s_history, 0, 0, 0, total_stops, key
     # for i in range(0, n_steps): args = step(i, args)
     args = jax.lax.fori_loop(0, n_steps, step, args)
-    _, s_history_raveled, total_accept_prob, total_steps_taken, total_valid_samples, total_stops, key = args
+    _, s_history, total_accept_prob, total_steps_taken, total_valid_samples, total_stops, key = args
 
-    # unravel params
-    # - the output chain is converted from a 2D array to a list of pytrees
-    s_history_unraveled = [unravel_fn(s_raveled) for s_raveled in s_history_raveled]
-    
     # print(f'Termination: max_steps={total_stops[0]}, u-turn={total_stops[1]}, max_error={total_stops[2]}.')
     ratio_valid_samples = total_valid_samples/total_steps_taken
-    return s_history_unraveled, ratio_valid_samples, total_stops
+    return s_history, ratio_valid_samples, total_stops

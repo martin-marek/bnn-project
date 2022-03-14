@@ -1,7 +1,6 @@
 import jax
 import jax.numpy as jnp
-from jax.flatten_util import ravel_pytree
-from .utils import ifelse, normal_like_tree, ravel_pytree_
+from .utils import ifelse
 
 
 def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
@@ -12,14 +11,14 @@ def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
         
         # update momentum
         grad = jax.grad(log_prob_fn)(params)
-        momentum = jax.tree_multimap(lambda m, g: m + 0.5 * step_size * g, momentum, grad)
+        momentum = momentum + 0.5 * step_size * grad
 
         # update params
-        params = jax.tree_multimap(lambda s, m: s + m * step_size, params, momentum)
+        params = params + momentum * step_size
 
         # update momentum
         grad = jax.grad(log_prob_fn)(params)
-        momentum = jax.tree_multimap(lambda m, g: m + 0.5 * step_size * g, momentum, grad)
+        momentum = momentum + 0.5 * step_size * grad
         
         return params, momentum
 
@@ -37,7 +36,7 @@ def hmc_sampler(key, params, log_prob_fn, n_steps, n_leapfrog_steps, step_size):
         key, normal_key, uniform_key = jax.random.split(key, 3)
 
         # generate random momentum
-        momentum = normal_like_tree(params, normal_key)
+        momentum = jax.random.normal(normal_key, params.shape)
 
         # leapfrog
         new_params, new_momentum = leapfrog(params, momentum, log_prob_fn, step_size, n_leapfrog_steps)
@@ -52,21 +51,14 @@ def hmc_sampler(key, params, log_prob_fn, n_steps, n_leapfrog_steps, step_size):
         params = ifelse(accept, new_params, params)
         
         # store history
-        params_raveled = ravel_pytree_(params)
-        params_history = params_history.at[i].set(params_raveled)
+        params_history = params_history.at[i].set(params)
         
         return params, params_history, total_accept_prob, key
     
-    # ravel params
-    params_raveled, unravel_fn = ravel_pytree(params)
-    
     # do 'n_steps'
-    params_history_raveled = jnp.zeros([n_steps, len(params_raveled)])
-    _, params_history_raveled, total_accept_prob, key = jax.lax.fori_loop(0, n_steps, step, (params, params_history_raveled, 0, key))
+    params_history = jnp.zeros([n_steps, len(params)])
+    _, params_history, total_accept_prob, key = jax.lax.fori_loop(0, n_steps, step, (params, params_history, 0, key))
     avg_accept_prob = total_accept_prob/n_steps
     
-    # unravel params
-    params_history_unraveled = [unravel_fn(params_raveled) for params_raveled in params_history_raveled]
-    
     # print(f'Avg. accept. prob.: {(total_accept_prob/n_steps):.2%}')
-    return params_history_unraveled, avg_accept_prob
+    return params_history, avg_accept_prob
