@@ -28,7 +28,7 @@ def leapfrog(params, momentum, log_prob_fn, step_size, n_steps):
     return new_params, new_momentum
 
 
-def hmc_sampler(key, params, log_prob_fn, n_steps, n_leapfrog_steps, step_size):
+def hmc_sampler(log_prob_fn, params, key, n_steps, n_leapfrog_steps, step_size):
 
     # define a single step
     def step(i, args):

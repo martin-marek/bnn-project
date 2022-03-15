@@ -251,7 +251,7 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
     return nuts_step
 
 
-def nuts_sampler(key, s, log_prob_fn, n_steps, step_size, max_depth):
+def nuts_sampler(log_prob_fn, s, key, n_steps, max_depth, step_size):
     """Runs the No-U-Turn Sampler (NUTS) variant of HMC for n_steps."""
 
     # make a function that will compute one step of the NUTs algorithm
