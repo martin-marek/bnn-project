@@ -1,6 +1,7 @@
 import jax
 import haiku as hk
-from .utils import normal_like_tree
+from jax.flatten_util import ravel_pytree
+from .utils import ravel_pytree_ as ravel_fn
 
 
 def make_mlp_fn(layer_dims, output_dim):
@@ -31,18 +32,27 @@ def make_mlp_fn(layer_dims, output_dim):
     return forward
 
 
-def make_predict_fn(net):
+def make_flattened_predict_fn(net, params_sample):
+    # print(params_sample)
+    _, unravel_fn = ravel_pytree(params_sample)
+
+    @jax.jit
     def predict_fn(x, params):
+        params = unravel_fn(params)
         y_hat, _ = net.apply(params, None, None, x)
         return y_hat
+    
     return predict_fn
 
 
-def make_nn(key, x, layer_dims=[10, 10, 10], output_dim=2, stdev=1):
+def make_nn(key, x, layer_dims=[10, 10, 10], output_dim=2):
+    # create NN
     net_fn = make_mlp_fn(layer_dims, output_dim)
     net = hk.transform_with_state(net_fn)
     params, _ = net.init(key, x)
-    params = normal_like_tree(params, key)
-    params = jax.tree_map(lambda x: stdev*x, params)
-    predict_fn = make_predict_fn(net)
+    
+    # use arrays as params instead of pytrees
+    predict_fn = make_flattened_predict_fn(net, params)
+    params = ravel_fn(params)
+
     return predict_fn, params
