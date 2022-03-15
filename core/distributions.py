@@ -8,7 +8,7 @@ def gaussian_log_pdf(y, mean, std):
 
 def make_gaussian_log_likelihood(x, y, predict_fn):
     
-    def out_fn(params):
+    def out_fn(params, x, y):
         # predict y
         y_hat = predict_fn(x, params)
         mean = y_hat[:, 0]
@@ -32,14 +32,3 @@ def make_gaussian_log_prior(std):
         return log_prob
     
     return log_prior
-
-
-def make_log_posterior(log_likelihood_fn, log_prior_fn):
-    
-    def log_posterior_fn(params):
-        log_likelihood = log_likelihood_fn(params)
-        log_prior = log_prior_fn(params)
-        log_posterior = log_likelihood + log_prior
-        return log_posterior
-    
-    return log_posterior_fn
