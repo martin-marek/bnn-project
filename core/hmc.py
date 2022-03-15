@@ -43,7 +43,7 @@ def hmc_sampler(log_prob_fn, params, key, n_steps, n_leapfrog_steps, step_size):
 
         # MH correction
         potentaial_energy_diff = log_prob_fn(new_params) - log_prob_fn(params)
-        kinetic_energy_diff = 0.5*sum([jnp.sum(m1**2-m2**2) for m1, m2 in zip(jax.tree_leaves(momentum), jax.tree_leaves(new_momentum))])
+        kinetic_energy_diff = 0.5*(momentum**2 - new_momentum**2).sum()
         log_accept_prob = potentaial_energy_diff + kinetic_energy_diff
         accept_prob = jnp.minimum(1, jnp.exp(log_accept_prob))
         total_accept_prob += accept_prob
