@@ -28,3 +28,9 @@ def pmap_(f, shard_args, distr_args):
     def g(*shard_args):
         return f(*shard_args, *distr_args)
     return jax.pmap(g)(*shard_args)
+
+def vmap_(f, shard_args, distr_args):
+    # pmaps a function over `shard_args`, reusing `distr_args`
+    def g(*shard_args):
+        return f(*shard_args, *distr_args)
+    return jax.vmap(g)(*shard_args)

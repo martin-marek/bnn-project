@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 from functools import partial
-
+from .utils import vmap_
 
 def train_sgd(params, log_likelihood_fn, n_epochs, lr_start, lr_stop):
     
@@ -26,3 +26,11 @@ def train_sgd(params, log_likelihood_fn, n_epochs, lr_start, lr_stop):
     params, loss_history = jax.lax.fori_loop(0, n_epochs, step, (params, loss_history))
     
     return params, loss_history
+
+
+def train_ensamble(params_init, *args):
+    params, loss_history = vmap_(train_sgd, [params_init], args)
+    params = params.reshape([-1, params.shape[-1]])
+    loss_history = loss_history.reshape([-1, loss_history.shape[-1]])
+    return params,  loss_history
+
