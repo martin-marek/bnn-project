@@ -26,8 +26,8 @@ def make_gaussian_log_likelihood(x, y, predict_fn):
 def make_gaussian_log_prior(std):
     
     def log_prior(params):
-        n_params = sum([p.size for p in jax.tree_leaves(params)])
-        dy2 = sum(jax.tree_leaves((jax.tree_map(lambda x: jnp.sum(x**2), params))))
+        n_params = len(params)
+        dy2 = (params**2).sum()
         log_prob = -0.5 * n_params * jnp.log(std**2 * 2 * jnp.pi) - 0.5 * dy2/std**2
         return log_prob
     
