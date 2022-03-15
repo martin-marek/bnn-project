@@ -35,8 +35,10 @@ def make_gaussian_log_prior(std):
 
 
 def make_log_posterior_fn(x, y, log_likelihood_fn, log_prior_fn):
+
     def out_fn(params):
         log_likelihood = log_likelihood_fn(params, x, y)
         log_prior = log_prior_fn(params)
         return log_likelihood + log_prior
+
     return out_fn
