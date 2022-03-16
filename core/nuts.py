@@ -1,6 +1,5 @@
 import jax
 import jax.numpy as jnp
-from jax.flatten_util import ravel_pytree
 from .utils import ifelse
 
 def is_power_of_two(n):

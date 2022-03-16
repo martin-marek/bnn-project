@@ -33,7 +33,6 @@ def make_mlp_fn(layer_dims, output_dim):
 
 
 def make_flattened_predict_fn(net, params_sample):
-    # print(params_sample)
     _, unravel_fn = ravel_pytree(params_sample)
 
     @jax.jit
