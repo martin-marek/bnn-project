@@ -6,36 +6,29 @@ from . import models
 
 
 def load_1d_regression_dataset():
-    # define x
+    
+    # define true function
+    def f(x):
+        return x[:, 0]/2 + x[:, 0]**2- x[:, 0]**4/4
+
+    # sample true function
+    x_true = jnp.linspace(-2, 2, 100)[:, None]
+    y_true = f(x_true)
+
+    # observed data
     step = 0.05
-    x_true = jnp.linspace(-2, 2, 500)[:, None]
-    x_train = jnp.concatenate([jnp.arange(-1.5, 0, step), jnp.arange(1, 1.5, step)])[:, None]
+    x_train = jnp.concatenate([jnp.arange(-1.1, -0.5, step), jnp.arange(0.5, 1.4, step)])[:, None]
     x_test = jnp.linspace(-2, 2, 100)[:, None]
-    N, C = x_train.shape
-
-    # define true model
-    key = jax.random.PRNGKey(7568)
-    layer_dims = 3*[10]
-    stdev = 1
-    predict_fn, params_true = models.make_nn(key, x_train, layer_dims, stdev)
-
-    # generate y
-    y_true = predict_fn(x_true, params_true)[:, 0]
-    y_train = predict_fn(x_train, params_true)[:, 0]
-    y_test = predict_fn(x_test, params_true)[:, 0]
-
-    # standardize y
-    mean, sd = y_true.mean(), y_true.std()
-    y_true = (y_true - mean) / sd
-    y_train = (y_train - mean) / sd
-    y_test = (y_test - mean) / sd
+    y_train = f(x_train)
+    y_test = f(x_test)
 
     # add noise
-    key, train_noise_key, test_noise_key = jax.random.split(key, 3)
-    sigma_obs = 0.3
-    y_train += sigma_obs * jax.random.normal(train_noise_key, [N])
-    y_test += sigma_obs * jax.random.normal(test_noise_key, [len(y_test)])
-    
+    sigma_obs = 0.1
+    key = jax.random.PRNGKey(0)
+    train_noise_key, test_noise_key = jax.random.split(key, 2)
+    y_train += sigma_obs * jax.random.normal(train_noise_key, y_train.shape)
+    y_test += sigma_obs * jax.random.normal(test_noise_key, y_test.shape)
+
     return (x_true, y_true), (x_train, y_train), (x_test, y_test)
 
 
