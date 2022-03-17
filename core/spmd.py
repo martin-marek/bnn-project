@@ -39,23 +39,27 @@ def make_log_posterior_fn(x, y, log_likelihood_fn, log_prior_fn):
     # same as distributions.log_posterior_fn but works in SPMD fashion
     # output values and gradients are synchronized across all devices
     
-    # define output function
-    def f(params):
+    @sync_grad_of_psum
+    def log_posterior_fn(params):
         log_likelihood = log_likelihood_fn(params, x, y)
         log_likelihood = jax.lax.psum(log_likelihood, axis_name='batch')
         log_prior = log_prior_fn(params)
         return log_likelihood + log_prior
 
-    # modify f to synchronize gradients
+    return log_posterior_fn
+
+
+def sync_grad_of_psum(f):
+    """
+    If f computes a psum, grad(f) will not be synced across shards
+    (hence it will incorrect). This wrapper modifies f's jvp to fix that.
+    - explanation: https://github.com/google/jax/issues/3970
+    - implementation details: https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html
+    """
     def jvp_fn(primals, tangents):
-        # by default, grad of pmap doesn't synchronize across devices,
-        # the below modification of the jvp fixes that
-        # explanation: https://github.com/google/jax/issues/3970
-        # implementation details: https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html
         tangents = jax.lax.pmean(tangents, axis_name='batch')
         primals_out, tangents_out = jax.jvp(f, primals, tangents)
         return primals_out, tangents_out
     g = jax.custom_jvp(f)
     g.defjvp(jvp_fn)
-
     return g
