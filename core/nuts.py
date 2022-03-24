@@ -2,6 +2,19 @@ import jax
 import jax.numpy as jnp
 from .utils import ifelse
 
+
+"""
+Notation:
+- s: model parameters
+- v: momentum
+- u: slice parameter
+
+References:
+[1]: "The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo"
+[2]: "Composable Effects for Flexible and Accelerated Probabilistic Programming in NumPyro"
+"""
+
+
 def is_power_of_two(n):
     # https://stackoverflow.com/a/57025941/6495494
     return ((n & (n-1)) == 0) & (n != 0)
