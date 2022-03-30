@@ -10,7 +10,7 @@ def split(x, n_batches):
     return x_batched
 
 
-def pmap_(f):
+def spmd(f):
     # wrapper to pmap an MCMC sampler 'f' in SPMD fashion
     # f: (log_posterior_fn, params, *args) -> (chain, *logs)
 

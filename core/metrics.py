@@ -2,28 +2,33 @@ import jax
 import jax.numpy as jnp
 
 
-def autocorr(y, n_lags=20):
-    """
-    y.shape: [num_steps (N) x num_features (B)]
-    """
-    N, B = y.shape
+def autocorr(chains, n_lags=20):
+    # estimate mean of each param
+    means = chains.mean(axis=[0, 1])
 
-    # a single step in the loop compute autocovariance for a given lag
+    # single param, single lag
+    def acf(y, mean, lag):
+        a = y[n_lags:]
+        b = jnp.roll(y, lag)[n_lags:]
+        cov_ab = ((a - mean) * (b - mean)).mean()
+        cov_a = ((a - mean)**2).mean()
+        cov_b = ((b - mean)**2).mean()
+        cor = cov_ab / jnp.sqrt(cov_a * cov_b)
+        return cor
+
+    # vmap over params
+    acf = jax.vmap(acf, in_axes=(1, 0, None))
+
+    # vmap over chains
+    acf = jax.vmap(acf, in_axes=(0, None, None))
+
+    # for each lag, average autocor across all chains and params
     def step(i, r):
-        a = y[n_lags:, :]
-        b = jnp.roll(y, i, axis=0)[n_lags:, :]
-        cov_ab = ((a - a.mean(axis=0, keepdims=True)) * (b - b.mean(axis=0, keepdims=True))).mean(axis=0)
-        cor = cov_ab / (a.std(axis=0) * b.std(axis=0))
-        r = r.at[i, :].set(cor)
+        cor = acf(chains, means, i).mean()
+        r = r.at[i].set(cor)
         return r
-
-    # compute autocovariance for each chain and feature separately
-    r = jnp.zeros([n_lags, B])
-    r = r.at[0, :].set(1)
+    r = jnp.ones([n_lags])
     r = jax.lax.fori_loop(1, n_lags, step, r)
-
-    # take a mean along features
-    r = r.mean(axis=1)
     
     return r
 
