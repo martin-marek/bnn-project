@@ -39,7 +39,7 @@ def make_log_posterior_fn(x, y, log_likelihood_fn, log_prior_fn):
     # same as distributions.log_posterior_fn but works in SPMD fashion
     # output values and gradients are synchronized across all devices
     
-    @partial(sync_grad_of_psum, 'batch')
+    @partial(sync_grad_of_psum, axis_name='batch')
     def log_posterior_fn(params):
         log_likelihood = log_likelihood_fn(params, x, y)
         log_likelihood = jax.lax.psum(log_likelihood, axis_name='batch')
@@ -56,7 +56,6 @@ def sync_grad_of_psum(f, axis_name):
     - explanation: https://github.com/google/jax/issues/3970
     - implementation details: https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html
     """
-    print(f, axis_name)
     def jvp_fn(primals, tangents):
         tangents = jax.lax.pmean(tangents, axis_name=axis_name)
         primals_out, tangents_out = jax.jvp(f, primals, tangents)
