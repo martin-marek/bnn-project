@@ -56,6 +56,7 @@ def sync_grad_of_psum(f, axis_name):
     - explanation: https://github.com/google/jax/issues/3970
     - implementation details: https://jax.readthedocs.io/en/latest/notebooks/Custom_derivative_rules_for_Python_code.html
     """
+    print(f, axis_name)
     def jvp_fn(primals, tangents):
         tangents = jax.lax.pmean(tangents, axis_name=axis_name)
         primals_out, tangents_out = jax.jvp(f, primals, tangents)
