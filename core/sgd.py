@@ -14,26 +14,25 @@ def train_sgd(log_posterior_fn, params, n_epochs, lr_start, lr_stop):
 
     # define update step for each epoch
     def step(i, args):
-        params, loss_history = args
+        params, loss_history, params_history = args
         lr = lr_start*lr_decay**i
         loss, grads = jax.value_and_grad(loss_fn)(params)
         params -= lr*grads
         loss_history = loss_history.at[i].set(loss)
-        return params, loss_history
+        params_history = params_history.at[i].set(params)
+        return params, loss_history, params_history
 
     # train for 'n_epochs'
     loss_history = jnp.zeros(n_epochs)
-    params, loss_history = jax.lax.fori_loop(0, n_epochs, step, (params, loss_history))
+    params_history = jnp.zeros([n_epochs, len(params)])
+    params, loss_history, params_history = jax.lax.fori_loop(0, n_epochs, step, (params, loss_history, params_history))
     
-    return params, loss_history
+    return params, loss_history, params_history
 
 
 def train_ensamble(log_posterior_fn, params_init, *args):
     @jax.vmap
     def train_in_parallel(params):
         return train_sgd(log_posterior_fn, params, *args)
-    params, loss_history = train_in_parallel(params_init)
-    params = params.reshape([-1, params.shape[-1]])
-    loss_history = loss_history.reshape([-1, loss_history.shape[-1]])
-    return params, loss_history
+    return train_in_parallel(params_init)
 
