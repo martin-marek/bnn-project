@@ -431,7 +431,7 @@ The complete HMC algorith is described below:
 
 The *No-U-Turn Sampler* (NUTS) is a modificaiton of HMC that adapts the trajectory length (by adapting the number of steps) depending on the local geometry of the target distribution. \cite{nuts} The idea is to always run Hamiltonian dynamics *just long enough* --  until the point when running the simulation for any longer would result in the particle moving *closer* to its origin, rather than away from it. Let  $\theta, v$ denote the state of the particle at the start of Hamiltonian dynamics and $\theta', v'$ denote the current state of the particle under Hamiltonian dynamics.
 
-We can measure the distance of $\theta'$ to $\theta$ as $||\theta'-\theta||^2$, so the stopping condition is $\frac{d}{dt} ||\theta'-\theta||^2 < 0$. We can express the stopping condition in terms of $\theta', \theta, v'$, as derived below:
+We can measure the distance of $\theta'$ to $\theta$ as $||\theta'-\theta||^2$, so the stopping condition is $\frac{d}{dt} ||\theta'-\theta||^2 < 0$. When ste stopping condition is reached, we say that the particle makes a *U-turn*. The stopping condition can be expressed in terms of $\theta', \theta, v'$ as derived below:
 $$
 \begin{align}
 \frac{d}{dt} ||\theta'-\theta||^2 &< 0 \\
@@ -441,9 +441,15 @@ $$
 \end{align}
 \label{eq_uturn}
 $$
-It would be convenient to simply leapfrog until the condition in Eq. \ref{eq_uturn} is reached and then use the last leapfrog step as the proposal for ($\theta, v$). However, this would break time reversibility, so a Markov chain like this would not necessarily converge to the target distribution. In order for NUTS to stop when it detects a U-turn and preserve time reversibility, it needs to operate in a more complicated fashion.
+It would be convenient to simply leapfrog until the particle makes a U-turn and then use the last leapfrog step as the proposal for ($\theta, v$). However, this would break time reversibility, so a Markov chain like this would not necessarily converge to the target distribution. In order for NUTS to stop when it detects a U-turn *and* preserve time reversibility, it needs to operate in a more complicated fashion.
 
+NUTS works by recursively growing a balanced binary subtree. First, we start with the initial position, pick a random direction (forwards or backwards) and leapfrog 1 step. Then, we again choose a random direction (forwards or backwards) and leapfrog 2 steps. Then, we choose a random direction and leapfrog 4 steps… in general, at iteration $i$, we chose a random direction and leapfrog $2^i$ steps. This process continues until we reach a U-turn.
 
+==nuts_tree.pdf==
+
+This process implicitly grows a binary tree, where each node represents a single state of the particle ($\theta_j, v_j$). At each iteration of NUTS, the size of the tree is doubled: it either grows forwards or backwards by $2^i$ nodes. When the tree is grown forwards, we leapfrog forwards in time starting from the right-most state $(\theta_\text{right}, v_\text{right})$ and append the new states to the right side of the tree. When the tree is grown backwards, we leapfrog backwards in time, starting from the left-most state $(\theta_\text{left}, v_\text{left})$ and sequentially append the new states to the left side of the tree. Even though we alternate between growing the binary tree forwards and backwards, the resulting tree will be a consistent leapfrog path, i.e. running the leapfrog algorithm from $(\theta_\text{left}, v_\text{left})$ will always reach $(\theta_\text{right}, v_\text{right})$.
+
+In each iteration of NUTS, in addition to growing the tree, we check for U-turns, 
 
 Hence, NUTS eliminates the need to perform hand-tuning of the number of steps and under certain conditions offers better performance than optimally-tuned HMC.
 
