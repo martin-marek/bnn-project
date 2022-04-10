@@ -48,7 +48,7 @@ Essentially, the input to the layer $x_i$ is multiplied by a matrix $W_i$, shift
 
 Another way to visualize the MLP is as a graph of connected nodes that represent *artificial neurons* (Fig. \ref{}). In every layer, every node is connected to every node in the previous layer and every node in the following layer (hence the name *fully-connected*). We can think of the connections between the neurons as the matrix parameters $W_{jk}$, corresponding to the strength of each connection. At a very high level, this architecture is inspired by the human brain, although it has to be noted that the analogy is loose.
 
-==MLP.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/illustrations/mlp.pdf)
 
 The role of the nonlinearity $\sigma$ (also called an *activation function*) is essential. If there was no nonlinearity in the network, each leyer would only perform some specific linear transformation. However, the composition of linear transformations is still just a linear transformation. So without the nonlinearity, increasing the network's number of layers would have essentially no effect. In contrast, *with* the nonlinearity, the more layers are used, the more complex a function the nueral network can express. Historically, it was common to apply the *sigmoid* activation function, which monotonically maps all real numbers to the interval $(-1, 1)$:
 $$
@@ -116,15 +116,15 @@ Whether a neural network is trained to maximize the log-likelihood (i.e. find th
 
 Let's assume we observe the data in Fig. \ref{fig_1d_dataset} and try to train a neural network to model the conditoinal distribution $p(y | x)$. 
 
-==1d_dataset.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/1d_dataset.pdf)
 
 We use an MLP with a single hidden layers consisting of 50 nodes and a $N(0, 0.1^2)$ prior over $\theta$ . The network outputs the tuple $(\mu, \sigma^2)$ for each observation and we assume that $y \sim N(y, \sigma^2)$. We initialize six networks like this, each with parameters drawn independently from a $N(0, 0.22^2)$ distribution. Footnote: using a larger variance to initialize the networks would cause problems with numerical stability. Afterwards, we train each network using SGD until convergence. We set the loss function proportional to the logarithm of the posterior distribution. Fig. \ref{} shows the predictions of each of these networks:
 
-==1d_ens_predictions.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/1d_ens_predictions.pdf)
 
-It appears that each of these independent networks has learned the same function. However, the parameters of each network are different. This is evident from Fig. \ref{}, which shows the $L_1$ distance between the parameters of the first network and the other five during traing. At initialization, the $L_1$ norms of the parameters of each networks is between $0.18 - 0.25$ and they remain in this range after training. At initialization, the distances are all between  $0.2 - 0.3$ and they only change very little during training. This implies that each of the 6 networks has converged to a different solution in the parameter space, since the distances are roughly constant and roughly equal to the norms of the parameters.
+It appears that each of these independent networks has learned the same function. However, the parameters of each network are different. This is evident from Fig. \ref{}, which shows the $L_1$ distance between the parameters of the first network and the other five during traing. At initialization, the $L_1$ norms of the parameters of each networks is between $0.18 - 0.25$ and they remain in this range after training. At initialization, the distances are all between $0.2 - 0.3$ and they only change very little during training. This implies that each of the 6 networks has converged to a different solution in the parameter space, since the distances are roughly constant and roughly equal to the norms of the parameters.
 
-==1d_ens_param_distance.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/1d_ens_param_distance.pdf)
 
 Part of the reason behind this is that modern neural networks are typically *over-parametrized*, meaning there are many different sets of parameters $\theta$ that fit the observed data equally well. \cite{underspecification, deep_ens, mode_connect} Each of the networks in this example were intilized differently and SGD tends to converge to a solution that is close to the initialization. Hence, each of the different initializations resulted in a different SGD solution.
 
@@ -140,9 +140,9 @@ Then, any point $R$ along the surface described by $\theta_0, \theta_1, \theta_2
 $$
 R = \theta_m + x d_x + y d_y
 $$
-==loss_landscape.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/loss_landscape.pdf)
 
-*A contour plot of the value of the loss function of a single-layer MLP. The three crosses connected by dashed grey lines represent three independent SGD solutions. They define the plane along which the loss is evaluated, displayed by the contours.*
+<u>A contour plot of the value of the loss function of a single-layer MLP. The three crosses connected by dashed grey lines represent three independent SGD solutions. They define the plane along which the loss is evaluated, displayed by the contours.</u>
 
 Fig. \ref{} shows the plane described by the three solutions $\theta_0, \theta_1, \theta_2$. Notice that $\theta_1$ and $\theta_2$ (the middle and right solutions) appear to be connected by a low-loss region, while $\theta_0$ appears to be disconnected from the other two solutions.
 
@@ -154,7 +154,7 @@ $$
 $$
 The above bezier curve has a single free parameter, $\theta^*$. SGD can be used to find $\theta^*$ given $\theta_0$ and $\theta_1$. For example, consider the left and middle solutions from Fig. \ref{fig_loss_surface}, $\theta_0$ and $\theta_1$. Even though they appear to be disconnected, we can find a low-loss tunnel defined by a quadratic Bézier curve connecting them, as shown in Fig. \ref{fig_mode_connect}.
 
-==mode_connectivity.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/mode_connectivity.pdf)
 
 Even more surprisingly, the loss landscape of deep neural netoworks contains planes with arbitrary patters, such as images of a bat or a cow. \cite{sightseeing} The complexity of the loss lanscape has important consequences for Bayesian neural networks that are discussed in section \ref{}.
 
@@ -190,7 +190,7 @@ All of the prior examples used the prior distribition $\theta \sim N(0, 0.1^2)$,
 
 Fig. ref\{fig_1d_predictions_by_stdev} shows the posteriors obtained by varying the standard deviation of the prior. We see that a small standard deviation (i.e. an informative prior) acts as a strong regularization. A value of $0.1$ seemingly fails to capture the underlying trend in the observed data, but values $0.2, 0.5, 1, 3$ all seem reasonable. We might favor values $0.2$ and $0.5$ when we expect the undelying data generating process to be simple -- we expect that any observed trend in the data would continue to hold even for unobserved values of $x$. Values $1$ and $3$, on the other hand, represent an increased model uncertainty -- even though the observed values of $x$ have a cetrain trend, there might be a different trend for unobserved values of $x$. A standard deviation of $10$ takes this to the extreme, representing the belief that we cannot say almost anything at all about the trend for unobserved values of $x$. This behavior of the posterior predictive distribution in a BNN is analogous to Gaussian processes. In fact, in the infinite-width limit, some BNNs become a Gaussian process. \cite{neural_tangents}
 
-==1d_predictions_by_stdev.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/1d_predictions_by_stdev.pdf)
 
 ### Prediction
 
@@ -211,7 +211,9 @@ Using the strong law of large numbers and assuming $x_i$ are i.i.d.:
 $$
 \mathbb{P}\left(\lim_{n \rightarrow \infty} \hat{f}_n=\mathbb{E}_{\pi}[f]\right)=1
 $$
-In other words, we can use $n$ i.i.d. samples from $p(x)$ to approximate $\int f(x)p(x) dx$. As $n \rightarrow \infty$, this approximation will converge almost surely to the true value of the integral. Even better, by using the central limit theorom, we get that the approximation converges as $1/\sqrt n$, i.e., its convergence rate does not depend on the number of dimensions. This is crucial proporty to work in high dimensions.
+In other words, we can use $n$ i.i.d. samples from $p(x)$ to approximate $\int f(x)p(x) dx$. As $n \rightarrow \infty$, this approximation will converge almost surely to the true value of the integral. Even better, by using the central limit theorom, we get that the approximation converges as $1/\sqrt n$, i.e., its convergence rate does not depend on the number of dimensions. This is a crucial property to work in high dimensions.
+
+==TODO: correlation ⇒ worse MC estimate==
 
 We can apply this technique to the posterior predictive distribution of a BNN by taking the expectation of the likelihood $p(\tilde{y}|\tilde{x},\theta)$ over the posterior $p(\theta|x,y)$. However, we must be careful about how this simulation is implemented. As described in section \ref{sec_loss_fn}, computers struggle to work with small numbers, which is why working with the logarithms of probabilities is more accurate. Unfortunately, we cannot average over $\log p(\tilde{y})$ directly, rather we must average over $p(\tilde{y})$. The naive solution would be to simply exponentiate $\log p(\tilde{y})$, but since $p(\tilde{y})$ may be close to zero, this would result in underflow. A better solution is to use the $\textrm{LogSumExp}$ function, which is a stable way to compute the logarithm of a sum of exponents. The resulting expression is derived below:
 $$
@@ -236,7 +238,7 @@ Stochastic Weight Averaging Gausssian (SWAG) is an efficient way to compute a Ga
 
 If we consider the geometry of the loss function around the MAP solution to be approximately Gaussian, we can expoit the SGD trajectory to fit this Gaussian approximation. The idea is that as SGD converges to the MAP solution, it will bounce around the minimum. We can take the sample of parameters after each SGD training epoch to fit a Gaussian approximation of the loss function. Since the loss function is proportional to the log-posterior distribution, the fitted Gaussian distribution is a local Gassian approximation of the posterior around the MAP solution.
 
-The main limitation of SWAG is that it only describes a single mode of log-posterior distribution. As shown in section \ref{sec_loss_surface},  the posterior distribution of neural networks is multi-modal. In deep neural netoworks, the the distributions described by each mode tend to differ in function space, so a local approximation around a single mode fails to capture the functional diveristy of the posterior. \cite{deep_ens}
+The main limitation of SWAG is that it only describes a single mode of log-posterior distribution. As shown in section \ref{sec_loss_surface}, the posterior distribution of neural networks is multi-modal. In deep neural netoworks, the the distributions described by each mode tend to differ in function space, so a local approximation around a single mode fails to capture the functional diveristy of the posterior. \cite{deep_ens}
 
 #### Deep ensambles
 
@@ -266,7 +268,7 @@ In order to draw samples $\theta_0 \ldots \theta_{n-1}$ from a Markov chain defi
 - repeat for $i \in 1 \ldots (n-1)$:
   - draw $\theta_i \sim p(\theta_i|\theta_{i-1})$
 
-The goal is to define a process whose unique *equilibrium distribution* is equal to the target distribution $\pi(\theta)$ that we want to draw samples from. This means that for any $\theta_0$, as $n \rightarrow \infty$,  $p(\theta_n|\theta_0) \xrightarrow{d} \pi(\theta)$. This property will be met iff the chain is *$\pi$-irreducible*, *aperiodic*, and *$\pi$-invariant*.
+The goal is to define a process whose unique *equilibrium distribution* is equal to the target distribution $\pi(\theta)$ that we want to draw samples from. This means that for any $\theta_0$, as $n \rightarrow \infty$, $p(\theta_n|\theta_0) \xrightarrow{d} \pi(\theta)$. This property will be met iff the chain is *$\pi$-irreducible*, *aperiodic*, and *$\pi$-invariant*.
 
 A chain is $\pi$-irreducible iff any state $x$ that has a non-zero probability in the target distribution $\pi(\theta) > 0$ can be reached from any other state of the chain $\theta_0$ in a finite number of steps $n$:
 $$
@@ -282,7 +284,7 @@ Let's denote our target posterior distibution as $\pi(\theta)$. Then, once we de
 
 #### Metropolis-Hastings
 
-The simplest and most common MCMC algorithm is *Metropolis-Hastings*. It is a general family of alogrithms that ensure $\pi$-invariance. All MCMC algorihtms discussed in this essay belong to this family.
+The simplest and most common MCMC algorithm is *Metropolis-Hastings*. It is a general family of alogrithms that ensure $\pi$-invariance. Two out of the three MCMC algorihtms discussed in this essay belong to this family.
 
 First, let's denote two arbitrary states in $\pi(\theta)$ as $\theta$ and $\theta'$. Next, let's define a *proposal distribution* $Q(\theta'|\theta)$ and *acceptance probability* $A(\theta'|\theta)$. When $\theta' \ne \theta$, the transition *density* is equal to the product of the proposal density and the acceptance probability, as described in Eq. \ref{eq_transition_prob}. The event $\theta' = \theta$ happens with *probability mass* $1-\int_{-\infty}^{\infty} Q(\theta'|\theta)A(\theta'|\theta) d\theta'$ .
 $$
@@ -299,7 +301,7 @@ p(\theta'|\theta)\pi(\theta) &= p(\theta|\theta')\pi(\theta') \\
 \frac{A(\theta'|\theta)}{A(\theta|\theta')} &= \frac{Q(\theta|\theta')\pi(\theta')}{Q(\theta'|\theta)\pi(\theta)} \\
 \end{align}
 $$
-By setting $A(\theta'|\theta)$ to the value defined in Eq. \ref{eq_accept_prob}, we ensure that detailed balance (Eq.  \ref{eq_detailed_balance}) always holds, hence our chain is $\pi$-invariant. 
+By setting $A(\theta'|\theta)$ to the value defined in Eq. \ref{eq_accept_prob}, we ensure that detailed balance (Eq. \ref{eq_detailed_balance}) always holds, hence our chain is $\pi$-invariant. 
 $$
 A(\theta'|\theta) := \min \left(1, \frac{Q(\theta|\theta')\pi(\theta')}{Q(\theta'|\theta)\pi(\theta)} \right)
 \label{eq_accept_prob}
@@ -312,11 +314,11 @@ The samples drawn by MCMC are dependent, by the nature of a Markov chain. Howeve
 
 The simplest Metropolis-Hastings algorithm is the *Random-walk Metropolis-Hastings* (RWMH). In RWMH, the proposal disribution over $\theta'$ is a normal distribution centered around $x$: $Q(\theta'|\theta) \sim N(\theta, \sigma^2)$. A useful property of the normal distribution is that its density at $\theta$ only depends on the distance of $\theta$ from the mean of the distribution. As a result, $Q(\theta'|\theta) = q(\theta|\theta')$, so Eq. \ref{eq_accept_prob} simplifies to Eq. \ref{eq_rwmh_accept_prob}. The left side of Fig. \ref{ill_rwmh_hmc} illustrates the RWMH algorithm.
 $$
-A(\theta'|\theta) := \min \left(1, \frac{\pi(\theta')}{\pi(\theta)} \right)
+A(\theta'|\theta) = \min \left(1, \frac{\pi(\theta')}{\pi(\theta)} \right)
 $$
-==rwmh_vs_hmc.pdf==
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/illustrations/rwmh_vs_hmc.pdf)
 
-An illustration of Random-walk Metropolis-Hastings (RWMH) on the left and Hamiltonian Monte Carlo (HMC) on the right. The current state is represented by the blue point and the proposal distribution is illustrated by the yellow line. In RWMH, the proposal's acceptance probability depends on the height difference between the proposal and the target distribution. If the proposal is significantly higher than the target distribution, it will likely get rejected. If it is lower, it will always get accepted. Meanwhile, HMC proposes samples that lie exactly on the target distribution, so they always get accepted.
+*An illustration of Random-walk Metropolis-Hastings (RWMH) on the left and Hamiltonian Monte Carlo (HMC) on the right. The current state is represented by the blue point and the proposal distribution is illustrated by the yellow line. In RWMH, the proposal's acceptance probability depends on the height difference between the proposal and the target distribution. If the proposal is significantly higher than the target distribution, it will likely get rejected. If it is lower, it will always get accepted. Meanwhile, HMC proposes samples that lie exactly on the target distribution, so they always get accepted.*
 
 The only hyperparameter of the RWMH algorithm is the covariance matrix of the proposal distribution, $\sigma^2$. The simplest choice for the covariance matrix is a constant multiplied by the indentity matrix, meaning the proposals for each component are independent and have the same variance. While under some consitions, there might exist better choices of $\sigma^2$, in different conditions, these might be inferior to the simple independent proposals with constant variance. Hence, for simplicity, we will only focus on independent proposals with constant variance. Hence, the only hyperparameter that remains is a single number that represents the standard deviation of each dimension of the proposal distribution -- this is called the *step size*.
 
@@ -362,7 +364,7 @@ $$
 \begin{align}
 H(\theta, v) &= -\log \pi(\theta) + \frac{1}{2}||v||^2 \\
 \pi(\theta, v) &= \exp {-H(\theta, v)} \\
-&= \exp \left(-\log \pi(\theta) + \frac{1}{2}||v||^2 \right) \\
+&= \exp \left(\log \pi(\theta) - \frac{1}{2}||v||^2 \right) \\
 &= \pi(\theta) \frac{1}{2}||v||^2 \\
 &\propto \pi(\theta) \pi(v)
 \end{align}
@@ -410,11 +412,11 @@ v_t &\leftarrow v_{t+\varepsilon/2} - \frac{\varepsilon}{2} \frac{\partial U}{\p
 \end{align}
 \label{eq_leapfrog}
 $$
-Conveniently, each transformation in Eq. \ref{eq_leapfrog} is a shear transformation, so the leapfrog algorithm preserves volume exactly. Also, the algorithm is time-reversible by negating $v$, running it for the same number of steps, and negating $v$ again. Both of these properties are required for Eq. \ref{eq_hmc_accept_prob} to hold.  \cite{hmc}
+Conveniently, each transformation in Eq. \ref{eq_leapfrog} is a shear transformation, so the leapfrog algorithm preserves volume exactly. Also, the algorithm is time-reversible by negating $v$, running it for the same number of steps, and negating $v$ again. Both of these properties are required for Eq. \ref{eq_hmc_accept_prob} to hold. \cite{hmc}
 
 In general, HMC has three hyperparameters: step size $\sigma$, number of leaprog steps $n$, and *mass matrix* $m$. For simplicity, we only consider the use of a unit mass matrix, meaning we don't have to include it in any equations. Under some conditions, using a non-unit mass matrix might be beneficial, as it means that the momentum is updated at different rates for each parameter. However, there is no universally optimum value of the mass matrix.
 
-The product of step size with the number of steps is called the *trajectory length*. It dictates the average arc length that the particle travels during Hamiltonian dynamics. If the trajectory length is too small, the particle will make tiny steps, resulting in highly correlated samples of $\theta$. On the other hand, if the trajectory length is too large, the particle might aimlessly oscillate around its origin, as if it were rolling around the trough of a deep valley. This idea is further discuseed in section \ref{sec_nuts}. In practice, we might set the trajectory length roughly similar to what we would expect the standard deviation of the posterior to be. \cite{bnn_posteriors} This is simple to esimate when the prior dominates the likelihood, but harder when the likelihood dominates the prior.
+The product of step size with the number of steps is called the *trajectory length*. It dictates the average arc length that the particle travels during Hamiltonian dynamics. If the trajectory length is too small, the particle will make tiny steps, resulting in highly correlated samples of $\theta$. On the other hand, if the trajectory length is too large, the particle might repeatedly oscillate around its origin, as if it were rolling around the trough of a deep valley. This idea is further discuseed in section \ref{sec_nuts}. In practice, we might set the trajectory length roughly similar to what we would expect the standard deviation of the posterior to be. \cite{bnn_posteriors} This is simple to esimate when the prior dominates the likelihood, but harder when the likelihood dominates the prior.
 
 The computational complexity of HMC scales linearly with the number of steps. Hence, given a fixed trajectory length, we would prefer the step size to be as large as possible. However, as the step size increases, the leapfrog approximation error increases, which reduces the acceptance rate. The solution is to use a step size as large as possible while maintaining a good acceptance rate -- e.g. $80\%$. \cite{bnn_posterior}
 
@@ -429,7 +431,7 @@ The complete HMC algorith is described below:
 
 #### No-U-Turn Sampler
 
-The *No-U-Turn Sampler* (NUTS) is a modificaiton of HMC that adapts the trajectory length (by adapting the number of steps) depending on the local geometry of the target distribution. \cite{nuts} The idea is to always run Hamiltonian dynamics *just long enough* --  until the point when running the simulation for any longer would result in the particle moving *closer* to its origin, rather than away from it. Let  $\theta, v$ denote the state of the particle at the start of Hamiltonian dynamics and $\theta', v'$ denote the current state of the particle under Hamiltonian dynamics.
+The *No-U-Turn Sampler* (NUTS) is a modificaiton of HMC that adapts the trajectory length (by adapting the number of steps) depending on the local geometry of the target distribution. \cite{nuts} The idea is to always run Hamiltonian dynamics *just long enough* -- until the point when running the simulation for any longer would result in the particle moving *closer* to its origin, rather than away from it. Let $(\theta, v)$ denote the state of the particle at the start of Hamiltonian dynamics and $(\theta', v')$ denote the current state of the particle under Hamiltonian dynamics.
 
 We can measure the distance of $\theta'$ to $\theta$ as $||\theta'-\theta||^2$, so the stopping condition is $\frac{d}{dt} ||\theta'-\theta||^2 < 0$. When ste stopping condition is reached, we say that the particle makes a *U-turn*. The stopping condition can be expressed in terms of $\theta', \theta, v'$ as derived below:
 $$
@@ -441,27 +443,81 @@ $$
 \end{align}
 \label{eq_uturn}
 $$
-It would be convenient to simply leapfrog until the particle makes a U-turn and then use the last leapfrog step as the proposal for ($\theta, v$). However, this would break time reversibility, so a Markov chain like this would not necessarily converge to the target distribution. In order for NUTS to stop when it detects a U-turn *and* preserve time reversibility, it needs to operate in a more complicated fashion.
+It would be convenient to simply leapfrog until the particle makes a U-turn and then use the last leapfrog step as the proposal for ($\theta, v$). However, this could create a scenario where a particle traveling forwards in time stops at a different location that a particle traveling backwards in time, thus breaking detailed balance. Fig. \ref{nuts_uturn_detailed_balance} illustrates one such scenario. In order to satisfy detailed balance, we must make sure that the probability of proposing $(\theta, v) \rightarrow (\theta', v')$ is the same as $(\theta', v') \rightarrow (\theta, v)$. In HMC, this was satisfied by running the (time-reversible) leapfrog algorithm for a fixed number of steps. In order for NUTS to stop when it detects a U-turn *and* preserve detailed balance, it needs to operate in a more complicated fashion.
 
-NUTS works by recursively growing a balanced binary subtree. First, we start with the initial position, pick a random direction (forwards or backwards) and leapfrog 1 step. Then, we again choose a random direction (forwards or backwards) and leapfrog 2 steps. Then, we choose a random direction and leapfrog 4 steps… in general, at iteration $i$, we chose a random direction and leapfrog $2^i$ steps. This process continues until we reach a U-turn.
+![nuts_uturn_detailed_balance](/Users/martinmarek/Google Drive/UCL/STAT0035/illustrations/nuts_uturn_detailed_balance.pdf)
 
-==nuts_tree.pdf==
+*If a particle travels from $(\theta, v)$ along the dashed leapfrog trajectory, it will make a U-turn at the point $(\theta', v')$. However, if the particle started at $(\theta', v')$ and went backwards in time, it would make a U-turn at the point denoted by a large cross, not at the original starting point $(\theta, v)$.*
 
-This process implicitly grows a binary tree, where each node represents a single state of the particle ($\theta_j, v_j$). At each iteration of NUTS, the size of the tree is doubled: it either grows forwards or backwards by $2^i$ nodes. When the tree is grown forwards, we leapfrog forwards in time starting from the right-most state $(\theta_\text{right}, v_\text{right})$ and append the new states to the right side of the tree. When the tree is grown backwards, we leapfrog backwards in time, starting from the left-most state $(\theta_\text{left}, v_\text{left})$ and sequentially append the new states to the left side of the tree. Even though we alternate between growing the binary tree forwards and backwards, the resulting tree will be a consistent leapfrog path, i.e. running the leapfrog algorithm from $(\theta_\text{left}, v_\text{left})$ will always reach $(\theta_\text{right}, v_\text{right})$.
+NUTS works by recursively growing a balanced binary tree. First, we start with the initial position, pick a random direction (forwards or backwards) and leapfrog 1 step. Then, we again choose a random direction (forwards or backwards) and leapfrog 2 steps. Then, we choose a random direction and leapfrog 4 steps… in general, at iteration $i$, we chose a random direction and leapfrog $2^i$ steps. This process continues until we reach a U-turn.
 
-In each iteration of NUTS, in addition to growing the tree, we check for U-turns, 
+This process implicitly grows a binary tree, where each leaf represents a single state of the particle ($\theta', v'$). At each iteration of NUTS, the size of the tree is doubled: it either grows forwards or backwards by $2^i$ leafs. When the tree is grown forwards, we leapfrog forwards in time starting from the rightmost state $(\theta_\text{right}, v_\text{right})$ and append the new states to the right side of the tree. When the tree is grown backwards, we leapfrog backwards in time, starting from the leftmost state $(\theta_\text{left}, v_\text{left})$ and sequentially append the new states to the left side of the tree. The leafs of the binary tree are always indexed as $0 \ldots (n-1)$, from left to right, where $n$ is the number of leafs in the tree. This means that the index of a given leaf can change as the tree grows, since the leaf's distance from the leftmost leaf can change. Even though we alternate between growing the binary tree forwards and backwards, the resulting tree will be a consistent leapfrog path, i.e. running the leapfrog algorithm from $(\theta_\text{left}, v_\text{left})$ will always reach $(\theta_\text{right}, v_\text{right})$. Fig. \ref{fig_nuts_tree} illustrates the binary tree created after the fifth iteration of NUTS.
 
-Hence, NUTS eliminates the need to perform hand-tuning of the number of steps and under certain conditions offers better performance than optimally-tuned HMC.
+![nuts_tree](/Users/martinmarek/Google Drive/UCL/STAT0035/illustrations/nuts_tree.pdf)
+
+*A binary tree that results from running NUTS for 5 iterations. It has $2^5 = 16$ leafs. The leafs are connected by arrows to indicate that the path along the leafs is a valid leapfrog trajectory: the $i$th leaf ($i \in \{0 \ldots 15\}$) is the result of running the leapfrog algorithm for $i$ steps from leaf $0$.*
+
+In each iteration of NUTS, in addition to growing the tree, we check for U-turns. More specifically, we check the U-turn condition for the leftmost and rightmost leafs of all balanced subtrees. Fig. \ref{fig_nuts_uturn_leafs} illustrates each pair of leafs that need to be checked (in tree of height $5$) by a colored line. When checking for a U-turn, we check wheter continuing the Hamiltonian dynamics in *either* direction would result in the distance between the leafs to decrease. When checking the pair of leafs $(\theta_\text{left}, v_\text{left})$ and $(\theta_\text{right}, v_\text{right})$, this is derived in Eq. \ref{eq_uturn_both_dirs}.
+
+![nuts_uturn_leafs](/Users/martinmarek/Google Drive/UCL/STAT0035/illustrations/nuts_uturn_leafs.pdf)
+
+*A binary tree that results from running NUTS for 5 iterations. Colored  lines connect each pair of leafs that need to be checked for a U-turn in a tree of height $5$.*
+$$
+(\theta_\text{right} - \theta_\text{left}) \cdot v_\text{left} < 0
+\quad \text{or} \quad
+(\theta_\text{right} - \theta_\text{left}) \cdot v_\text{right} < 0
+\label{eq_uturn_both_dirs}
+$$
+In order to preseve detailed balance, once we detect a U-turn (or a different terminaiton criterion is reached, as discussed later), the tree stops growing and NUTS proposes a new state sampled from all *candidate states* $\mathcal{C}$ along the leapfrog trajectory. The set of candidates states is a subset of all leafs in the tree $\mathcal{B}$. There is a deterministic process for mapping the set of all leafs to the set of candidate states $\mathcal{B} \rightarrow \mathcal{C}$. In Fig. \ref{nuts_uturn_detailed_balance}, for example, if the initial state was $(\theta, v)$ and the particle leapfrogged until it reached $(\theta', v')$, the part of the trajectory between the cross and $(\theta', v')$ would not be considered part of valid samples $\mathcal{C}$. The reason is that if a particle started at $(\theta', v')$ and traveled toward $(\theta, v)$, it would *always* stop at the cross, hence it would *never* reach $(\theta, v)$. This scenario would break detailed balance, hence it must avoided. Recall that NUTS checks for a U-turn between the leftmost and rightmost leafs of all balanced subtrees each time the full tree doubles. If the U-turn is detected between the leftmost and rightmost leafs of the full tree, then any state along the leapfrog trajectory may be proposed without breaking detailed balance. However, if a U-turn is detected between anywhere *within* the leafs that were just added to the full tree, *only* those leafs may be proposed that existed *before* the tree doubling.
+
+While in HMC the mapping $(\theta, v) → (\theta', v')$ is deterministic, in NUTS, it is random. Still, in both cases $Q(\theta', v'|\theta, v) = Q(\theta, v|\theta', v')$. In NUTS, this is achieved by sampling $(\theta', v')$ uniformly from $\mathcal{C}$ and designing $p(\mathcal{B}, \mathcal{C} \mid \theta, v, u)$ such that if $(\theta, r) \in \mathcal{C}$ and $\left(\theta^{\prime}, r^{\prime}\right) \in \mathcal{C}$, then for any $\mathcal{B}$, $p(\mathcal{B}, \mathcal{C} \mid \theta, v)=p(\mathcal{B}, \mathcal{C} \mid \theta', v')$. In other words, any two states in $\mathcal{C}$ have the same probability of generating the full tree $\mathcal{B}$, and $(\theta', v')$ is sampled uniformly from $\mathcal{C}$ .
+
+Even though NUTS is closely related to HMC, it does not use Metropolis-Hastings sampling. Instead, it uses *slice sampling* \cite{slice_sampling}. Slice sampling is motivated by the observation that in order to draw samples from a distribution, we can take uniform samples from the area under the curve of its density function. This is achieved by alternately sampling vertically and horizontally from this area, as illustrated in Fig. \ref{fig_slice_sampling}. When sampling horizontally, we map $(\theta, v) \rightarrow (\theta', v')$. In order to sample vertically, we define a *slice variable* $u$​, which is a scalar variable representing the height. The joint distribution of $(\theta, v, u)$ is uniform under the curve $\pi(\theta, v)$:
+$$
+p(\theta, v, u) \propto \mathbb{I}\left(u \in\left[0, \pi(\theta, v) \right]\right)
+$$
+When sampling vertically under the curve, we need to draw samples of the slice variable $u$ conditional on $(\theta, v)$. Since the joint distribution $(\theta, v, u)$ is distributed uniformly under $\pi(\theta, v)$, $u|(\theta, v)$ is also distributed uniformly under $\pi(\theta, v)$: $u|(\theta, v) \sim \text{Uniform}[0, \pi(\theta, v)]$. Similarly, in order to sample horizontally under the curve, we draw samples of $(\theta, v)$ conditional on the slice variable $u$. $(\theta, v)|u$ is distributed uniformly along the region where the slice variable falls under the curve: $(\theta, v) | u \sim \text{Uniform}\{(\theta, v), \pi(\theta, v) \geq u\}$.
+
+![slice_sampling](/Users/martinmarek/Google Drive/UCL/STAT0035/illustrations/slice_sampling.pdf)
+
+*During slice sampling, we alternately sample vertically and horizontally from the are under the target density function. For example, starting at the blue point, we would sample vertically along the vertical orange line and arrive at the first grey point. Then we would sample horizontally along the horizontal orange line, arriving the second grey point. This alternating cycle repeats indefinitely.*
+
+Technically, in NUTS, we don't sample $(\theta,v,u)$ directly. Instead, we performs *Gibbs sampling* over the joint distribution $(\theta, v, u, \mathcal{B}, \mathcal{C})$. Gibbs sampling simply means that we iteratively sample each variable from its *full-conditional* distribution, i.e. its distribution conditional on all the other variables. This is performed as described in Alogirthm \ref{alg_nuts_gibbs}. All of the steps are valid Gibbs updates because they resample each variable (or set of variables) from their full-conditional distribution. In step 3, we first buid the leapfrog trajectory $\mathcal{B}$. Then, when mapping $\mathcal{B} \rightarrow \mathcal{C}$, we only consider those states $(\theta', v')$ that satisfy detailed balance *and* constitue a valid update under slice sampling, i.e. only those where $u \leq \pi(\theta', v')$.
+
+1. sample $v \sim \mathcal{N}(0, \sigma^2)$
+2. sample $u \sim \text{Uniform} [0, \pi(\theta, v)]$
+3. sample $\mathcal{B}, \mathcal{C} \sim p(\mathcal{B}, \mathcal{C} \mid \theta, v, u)$
+4. sample $\theta, v \sim \text{Uniform}[\mathcal{C}]$
+
+*A top-level view of NUTS as Gibbs sampling over the joint distribution $(\theta, v, u, \mathcal{B}, \mathcal{C})$.*
+
+Also, in addition to U-turns, we add two additional stopping criteria. First, we define a maximum tree depth, which is equivalent to defining the maximum number of leapfrog steps. This is to ensure that the program terminates even in absence of U-turns and we don't run out of memory. Second, we define a maximum leapfrog error $\Delta_\text{max}$. However, imposing a maximum error *does* violate detailed balance. Hence $\Delta_\text{max}$ needs to be made very large, such that it is only reached if the simulation is poorly setup, i.e. by setting the step size too large.
+
+#### Iterative NUTs
+
+In the original NUTS algorithm, the process for building a tree, including all stopping conditions, is recursive. However, it is difficult to implement a recursive algorithm efficiently. The developers behind NumPyro (a probabilistic programming library) solved this problem by developing *Iterative NUTS*, which is an iterative formulation of NUTS, meaning it can be implemented much more efficiently \cite{numpyto}.
+
+The process of building a tree is described through a nested for loop. The outer loop iterates through tree height, $h \in \{1, 2, 4, 8, 16 \ldots \}$. Each height $h$ correspons to $2^h$ leafs (leapfrog steps). The inner loop iterates thourgh each leaf, first generating it using the leapfrog algorithm, then checking for a U-turn. The outer loop is responsible for setting a forwards / backwards direction and checking wheter any stopping condition was reached within the inner loop.
+
+The main challenge in formulating NUTS as an iterative algorithm is to find an efficient way of checking U-turns. For example, imagine that we want to check for U-turns in a tree of height 5, as illustrated in Fig. \ref{fig_iterative_nuts_indexing}. First, notice in the figure that each pair of leafs that we check for a U-turn consists of one leaf with an odd index and one leaf with an even index. This means that as we iterate through the leafs, we can use even nodes to store temporary state and odd nodes to check for U-turns agains these previously-generated states. For example, at leaf 0, we would store its value and at leaft 1, we would check for a U-turn between leaf 0 and leaf 1. Notice that we do not need to store the value of leaf 1 because leaf 1 is not compared to any leaf with index greater than 1.
+
+![iterative_nuts_indexing](/Users/martinmarek/Google Drive/UCL/STAT0035/illustrations/iterative_nuts_indexing.pdf)
+
+*The 16 nodes correspond to the leafs of a height-5 tree. Colored lines indicate which pairs of leafs need to be checked for a U-turn. Each leaf is indexed in base 10 and base 2. The last two rows show the bit count and number of trailing bits of the binary representation of each index.*
+
+Since NUTS is based on a balanced binary tree, it is natural to index each leaf of the tree using binary numbers -- the binary index of each leaf corresponds closely to the position of the leaf within the tree. For example, observe that the number of trailing bits of each even leaf dictatates how many past leafs we need to check for a U-turn. For instance, the leaf 1 has binary representation 01, hence its number of trailing bits is 1. This is because it is the rightmost leaft only within a subtree of height 1. On the other hand, the leaf 7 has binary representation 111 and 3 trailing bits, because is the rightmost leaf in subtrees of height 1, 2, and 3. Hence, it must be compared to 3 other leafs when checking for U-turns.
+
+Also, observe that we do not need to store the value of each even leaf. Instead, for a tree of height $h$, we can get away with storing just $\log_2 h$ leafs. We can use the bit count of each even leaf to decide where in this array it should be stores. We will store leaf 0 in the 0th element of the array. We must keep this leaf indefinitely and no other leaf has bitcount 0, so this value will never get overwritten. We will store each leaf with bitcount 1 in the first element of the array. There are multiple leafs with bitcount 1, so the first element of the array will get overwritten mutliple times, but each time this happens, we no longer need to keep the previous values. In general, we will store *each* odd leaf as the $\text{bitcount}(i)$-th element in the array.
+
+Putting all this together, the following algorithm is a valid implementation of *Interative NUTS*:
+
+==TODO==
 
 ## Implementation
 
 One of the strongest limitations of MCMC-based Bayesian neural networks (compared to standard neural networks) is that they are orders of magnitude computationally more expensive to train and run inference on. For this reason, it is essential that any implementation of a BNN is as computationally-efficient as possible. The implementation behind this project utilizes several related tricks to achieve this (JAX, JIT, TPUs, SPMD), which are described below.
 
-### JAX
-
-All mathematical operations are implemented in JAX, an open-source machine learning library developed by Google. This includes the neural network, gradient-descent training, and  
-
-### Iterative NUTS
+All mathematical operations are implemented in JAX, an open-source machine learning library developed by Google. This includes the neural network, gradient-descent training, and 
 
 ## Results
 
