@@ -141,7 +141,7 @@ def save_checkpoint(s, v, i, checkpoints):
 
 def make_nuts_step(log_prob_fn, step_size, max_depth):
 
-    def nuts_step(s, v, key, step_size):
+    def nuts_step(s, v, key):
         """
         Runs one iteration of NUTS and proposes a new (params, momentum) pair.
         Uses an iterative implementation of the NUTS algorithm [2].
@@ -182,7 +182,7 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
         # - the direction has to be resampled and it might change
         # - if the direction changes, the current tree needs to be flipped
         def double_tree(args):
-            direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, dir_key = args
+            direction, s_fwd, v_fwd, s_bwd, v_bwd, s_out, v_out, s_rand, v_rand, checkpoints, dir_key = args
 
             # resample direction
             new_direction = 2*jax.random.bernoulli(dir_key) - 1
@@ -200,18 +200,21 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
             checkpoints = checkpoints.at[0, 0].set(s_bwd)
             checkpoints = checkpoints.at[0, 1].set(v_bwd)
 
-            return direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, dir_key
+            # update output
+            s_out, v_out = s_rand, v_rand
+
+            return direction, s_fwd, v_fwd, s_bwd, v_bwd, s_out, v_out, s_rand, v_rand, checkpoints, dir_key
 
         # define a single leapgfrog step with all overhead logic (eg storing intermediate state, stopping condition)
         def step(args):
-            i, s_rand, v_rand, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, direction, n_valid_samples, stop, key = args
+            i, s_out, v_out, s_rand, v_rand, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, direction, n_valid_samples, stop, key = args
             key, dir_key, error_key, keep_key = jax.random.split(key, 4)
 
             # if the current step is a power of 2, the tree is about to doble
             tree_has_doubled = is_power_of_two(i)
-            args = direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, dir_key
+            args = direction, s_fwd, v_fwd, s_bwd, v_bwd, s_out, v_out, s_rand, v_rand, checkpoints, dir_key
             args = jax.lax.cond(tree_has_doubled, double_tree, lambda x: x, args)
-            direction, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, _ = args
+            direction, s_fwd, v_fwd, s_bwd, v_bwd, s_out, v_out, s_rand, v_rand, checkpoints, _ = args
 
             # leapfrog
             # - if 'direction=-1', will run backwards in time
@@ -244,7 +247,7 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
             s_rand = ifelse(do_update, s_fwd, s_rand)
             v_rand = ifelse(do_update, v_fwd, v_rand)
 
-            return i+1, s_rand, v_rand, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, direction, n_valid_samples, stop, key
+            return i+1, s_out, v_out, s_rand, v_rand, s_fwd, v_fwd, s_bwd, v_bwd, checkpoints, direction, n_valid_samples, stop, key
 
         # define a stopping condition for the lax while loop
         # - stop is in int (rather than a bool) since jit tracing fails with a bool
@@ -253,12 +256,12 @@ def make_nuts_step(log_prob_fn, step_size, max_depth):
             return stop.sum() == 0
 
         # leapfrog until a stopping condition is reached
-        args = (1, s, v, s, v, s, v, checkpoints, 1, 1, stop, key)
+        args = (1, s, v, s, v, s, v, s, v, checkpoints, 1, 1, stop, key)
         # while while_cond(args): args = step(args)
         args = jax.lax.while_loop(while_cond, step, args)
-        i, s_rand, v_rand, *_, n_valid_samples, stop, _ = args
+        i, s_out, v_out, *_, n_valid_samples, stop, _ = args
 
-        return s_rand, v_rand, i, n_valid_samples, stop
+        return s_out, v_out, i, n_valid_samples, stop
 
     return nuts_step
 
@@ -271,41 +274,32 @@ def nuts_sampler(log_prob_fn, s, key, n_steps, max_depth, step_size):
 
     # make a function that will compute one step of the Metropolis–Hastings algorithm, using NUTS proposals
     def step(i, args):
-        s, s_history, total_accept_prob, total_steps_taken, total_valid_samples, total_stops, key = args
+        s, s_history, total_steps_taken, total_valid_samples, total_stops, key = args
         key, v_key, nuts_key, accept_key = jax.random.split(key, 4)
 
         # sample momentum
         v = jax.random.normal(v_key, s.shape)
 
         # propose new params and momentum
-        s_new, v_new, n_steps_taken, n_valid_samples, stop = nuts_step(s, v, key, step_size)
-
-        # MH correction
-        potentaial_energy_diff = log_prob_fn(s_new) - log_prob_fn(s)
-        kinetic_energy_diff = kinetic_energy_fn(v) - kinetic_energy_fn(v_new)
-        log_accept_prob = potentaial_energy_diff + kinetic_energy_diff
-        accept_prob = jnp.minimum(1, jnp.exp(log_accept_prob))
-        accept = jax.random.uniform(accept_key) < accept_prob
-        s = ifelse(accept, s_new, s)
+        s, v, n_steps_taken, n_valid_samples, stop = nuts_step(s, v, key)
 
         # store history
         s_history = s_history.at[i].set(s)
-        total_accept_prob += accept_prob
         total_steps_taken += n_steps_taken
         total_valid_samples += n_valid_samples
         total_stops += stop
          
-        return s, s_history, total_accept_prob, total_steps_taken, total_valid_samples, total_stops, key
+        return s, s_history, total_steps_taken, total_valid_samples, total_stops, key
     
     # do 'n_steps'
     # - `params` is a pytree of the current parameters
     # - `params_history_raveled` is the output chain represented as a 2D array
     s_history = jnp.zeros([n_steps, len(s)])
     total_stops = jnp.zeros([3], dtype=jnp.int32)
-    args = s, s_history, 0, 0, 0, total_stops, key
+    args = s, s_history, 0, 0, total_stops, key
     # for i in range(0, n_steps): args = step(i, args)
     args = jax.lax.fori_loop(0, n_steps, step, args)
-    _, s_history, total_accept_prob, total_steps_taken, total_valid_samples, total_stops, key = args
+    _, s_history, total_steps_taken, total_valid_samples, total_stops, key = args
 
     # print(f'Termination: max_steps={total_stops[0]}, u-turn={total_stops[1]}, max_error={total_stops[2]}.')
     ratio_valid_samples = total_valid_samples/total_steps_taken
