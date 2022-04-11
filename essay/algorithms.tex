@@ -70,7 +70,7 @@
 				\State $v^+, v^- \gets v^-, v^+$
 			\EndIf
 			\State $\textrm{direction} \gets \textrm{direction}_\textrm{new}$
-			\State $\textrm{checkpoints}[0] = (\theta^-, v^-)$ \Comment{checkpoint leftmost leaf}
+			\State $\textrm{checkpoints}[0] \gets (\theta^-, v^-)$ \Comment{checkpoint leftmost leaf}
 		\EndIf
 		
 		% leapfrog
@@ -78,7 +78,7 @@
 		
 		% update chekpoints
 		\If{$i$ is even} \Comment{update checkpoints}
-			\State $\textrm{checkpoints}[\textrm{BitCount}(i)] = (\theta, v)$
+			\State $\textrm{checkpoints}[\textrm{BitCount}(i)] \gets (\theta, v)$
 		
 		% check u-turns
 		\ElsIf{$i$ is odd} \Comment{check U-turns}
