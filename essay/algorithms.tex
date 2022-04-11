@@ -52,25 +52,25 @@
 \label{alg_nuts}
 \begin{algorithmic}
 \For{$\textrm{step} \gets 1 \ldots n_\textrm{samples}$} \Comment{generate $n_\textrm{samples}$ from target distribution}
-	\State $\textrm{checkpoints}[0] = (\theta, v)$ \Comment{checkpoint first leaf}
 	\State $\theta^+, \theta^-, \theta_\textrm{out} \gets \theta $ \Comment{initialize leftmost ($-$) and rightmost ($+$) leaf}
 	\State $v^+, v^-, v_\textrm{out} \gets v $
 	\State $n_\textrm{valid leafs} \gets 1$ \Comment{size of $\mathcal{C}$}
 	\State resample $\log u \sim \log \pi(\theta, v) - \textrm{Exp}(1)$ \Comment{resample log of slice variable}
 	
-	\State $\textrm{stop} \gets \textrm{False}$
+	\State $\textrm{stop} \gets \textrm{False}$ \Comment{becomes true if any termination condition is reached}
 	\State resample $v \sim N(0, \sigma^2)$ \Comment{resample momentum}
 	\For{$i \gets 1 \ldots 2^\textrm{MaxTreeHeight}$} \Comment{loop through leafs}
 		
 		% tree has doubled
 		\If{$\textrm{IsPowerOfTwo}(i)$} \Comment{tree is about to double}
-			\State $\theta_\textrm{out}, v_\textrm{out} \gets \theta_\textrm{subtree out}, v_\textrm{subtree out}$ \Comment{leafs are valid only if there were no U-turns}
+			\State $\theta_\textrm{out}, v_\textrm{out} \gets \theta_\textrm{subtree out}, v_\textrm{subtree out}$ \Comment{leafs are in $\mathcal{C}$ only if there were no U-turns}
 			\State resample $\textrm{direction}_\textrm{new} \sim \textrm{Uniform}[\{-1, 1\}]$ \Comment{decide whether to leapfrog forwards or backwards}
 			\If{$\textrm{direction}_\textrm{new} \ne \textrm{direction}$} \Comment{when direction changes, the tree needs to be flipped}
 				\State $\theta^+, \theta^- \gets \theta^-, \theta^+$
 				\State $v^+, v^- \gets v^-, v^+$
 			\EndIf
 			\State $\textrm{direction} \gets \textrm{direction}_\textrm{new}$
+			\State $\textrm{checkpoints}[0] = (\theta^-, v^-)$ \Comment{checkpoint leftmost leaf}
 		\EndIf
 		
 		% leapfrog
@@ -93,10 +93,10 @@
 			
 		% update output
 		\If{stop}
-			\State $\theta, v \gets \theta_\textrm{out}, v_\textrm{out}$ \Comment{$\theta_\textrm{out}, v_\textrm{out}$ were sampled uniformly among the valid leafs}
+			\State $\theta, v \gets \theta_\textrm{out}, v_\textrm{out}$ \Comment{$\theta_\textrm{out}, v_\textrm{out}$ were sampled uniformly from the valid leafs}
 			\State break
 		\Else
-			\If{$u \leq \pi(\theta^+, v^+)$} \Comment{slice sampling}
+			\If{$\log u \leq \log \pi(\theta^+, v^+)$} \Comment{slice sampling}
 				\State with prob. $1/n_\textrm{valid leafs}$, set $\theta_\textrm{subtree out}, v_\textrm{subtree out} \gets \theta^+, v^+$ \Comment{resample output leaf}
 				\State $n_\textrm{valid leafs} \gets n_\textrm{valid leafs} + 1$
 			\EndIf
