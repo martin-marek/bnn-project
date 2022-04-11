@@ -174,15 +174,15 @@ The Bayesian approach takes into consideration model uncertainty. When training 
 
 Fig. \ref{} displays the concept of model uncertainty using a standard neural network and a Bayesian neural network. A NN trained using SGD is a single model corresponding to a single value of $\theta$. On the other hand, a BNN comprises a distribution over possible models. The right plot in Fig. \ref{} shows the different likelihoods for $y$ obtained by sampling $\theta$ from the posterior. The BNN does what we would intuitively like it to do: it consideres that a set of different models might generate the data, and it consider all of them jointly. As we move farther away from observed data along the $x$-axis, the BNN's uncertainty increases, since we are gradually less confident about the behavior of the true model there. Conversely, the NN's confidence *increases* as it moves father away from the observed data, which is undesirable. There is no reason to assume that observation far away from the observed data will continue to follow the same linear trend that it predicts.
 
-==PLOT: NN, BNN predictions overlaid==
+![1d_predictions_overlaid](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/1d_predictions_overlaid.pdf)
 
 A more accurate way to visualize the predictions of a BNN is to plots its probability density function (PDF), which requires marginalizing over $\theta$. In general, this cannot be done exactly, but a good approximation is to draw samples from the posterior, $\theta_i$, and average the predictions over these samples. This technique is furhter described in section \ref{sec_prediction}.
 
-==PLOT: NN, BNN predictions PDF==
+![1d_predictions_pdf](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/1d_predictions_pdf.pdf)
 
 A simpler and more common way to visualize the predictions is to plot the confidence interval and mean estimate. One way this can be achieved is to sample $\theta_i$ from the posterior and then sample $y$ from each $\theta_i$. The emprical quantiles of the sampled values of $y$ can then be used to obtain approximate confidence intervals and an approximate mean.
 
-==PLOT: NN, BNN predictions CI==
+![1d_predictions_ci](/Users/martinmarek/Google Drive/UCL/STAT0035/plots/1d_predictions_ci.pdf)
 
 ### Prior selection
 
@@ -426,7 +426,7 @@ The complete HMC algorith is described below:
   - draw $v' \sim N(0, \sigma^2)$ 
   - set $v \leftarrow v'$
   - apply Hamiltonian dynamics to map $(\theta, v) \rightarrow (\theta', v')$
-  - set $(\theta, v) \leftarrow (\theta', v')$ with probability $\min \left(1, \frac{\pi(\theta')}{\pi(\theta)} \exp \left( \frac{1}{2}||v||^2 - ||v'||^2 \right) \right)$
+  - set $(\theta, v) \leftarrow (\theta', v')$ with probability $\min{\left(1, \frac{\pi(\theta')}{\pi(\theta)} \exp \left( \frac{1}{2}||v||^2 - ||v'||^2 \right) \right)}$
   - yield $\theta$
 
 #### No-U-Turn Sampler
@@ -509,7 +509,7 @@ Since NUTS is based on a balanced binary tree, it is natural to index each leaf 
 
 Also, observe that we do not need to store the value of each even leaf. Instead, for a tree of height $h$, we can get away with storing just $\log_2 h$ leafs. We can use the bit count of each even leaf to decide where in this array it should be stores. We will store leaf 0 in the 0th element of the array. We must keep this leaf indefinitely and no other leaf has bitcount 0, so this value will never get overwritten. We will store each leaf with bitcount 1 in the first element of the array. There are multiple leafs with bitcount 1, so the first element of the array will get overwritten mutliple times, but each time this happens, we no longer need to keep the previous values. In general, we will store *each* odd leaf as the $\text{bitcount}(i)$-th element in the array.
 
-Putting all this together, the following algorithm is a valid implementation of *Interative NUTS*:
+Putting all this together, the following algorithm is a valid pseudocode implementation of *Interative NUTS*:
 
 ==TODO==
 
