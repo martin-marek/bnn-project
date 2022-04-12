@@ -182,7 +182,7 @@ It appears that each of these independent networks has learned the same function
 \label{fig_1d_ens_param_distance}
 \end{figure}
 
-Part of the reason behind this is that modern neural networks are typically \textit{over-parametrized}, meaning there are many different sets of parameters $\theta$ that fit the observed data equally well. \cite{underspecification, deep_ens, mode_connectivity} Each of the networks in this example were initialized differently and SGD tends to converge to a solution that is close to the initialization. Hence, each of the different initializations resulted in a different SGD solution.
+Part of the reason behind this is that modern neural networks are typically \textit{over-parametrized}, meaning there are many different sets of parameters $\theta$ that fit the observed data equally well \cite{underspecification, deep_ens, mode_connectivity}. Each of the networks in this example were initialized differently and SGD tends to converge to a solution that is close to the initialization. Hence, each of the different initializations resulted in a different SGD solution.
 
 A natural question that arises is: \textit{what does the geometry of the loss function look like?} One way to peek at this high-dimensional landscape is to plot the plane described by three independent SGD solutions. Let's denote the parameters of these three networks $\theta_0, \theta_1, \theta_2$. Next, let's define a new coordinate system under which the coordinates of these solutions are $(-1, 0), (1, 0), (1, 0)$. This can be achieved by defining the following auxiliary variables:
 
@@ -209,7 +209,7 @@ R = \theta_m + x d_x + y d_y
 
 Fig. \ref{fig_loss_landscape} shows the plane described by the three solutions $\theta_0, \theta_1, \theta_2$. Notice that $\theta_1$ and $\theta_2$ (the middle and right solutions) appear to be connected by a low-loss region, while $\theta_0$ appears to be disconnected from the other two solutions.
 
-In general, but especially in larger networks \cite{mode_connectivity}, a linear path between two SGD solutions will contain a region of very high loss, comparable to a randomly-initialized network. At the same time, deviating from an SGD solution in a random direction will also cause the loss to increase rapidly \cite{swag}. However, for any two SGD solutions, there is typically a low-loss tunnel connecting them. The loss along this tunnel is approximately equal to the two SGD solutions. \cite{mode_connectivity} Fig. \ref{fig_loss_landscape} hints at this phenomenon, although the loss does decrease slightly along the low-loss path from the middle solution to the right solution.
+In general, but especially in larger networks \cite{mode_connectivity}, a linear path between two SGD solutions will contain a region of very high loss, comparable to a randomly-initialized network. At the same time, deviating from an SGD solution in a random direction will also cause the loss to increase rapidly \cite{swag}. However, for any two SGD solutions, there is typically a low-loss tunnel connecting them. The loss along this tunnel is approximately equal to the two SGD solutions \cite{mode_connectivity}. Fig. \ref{fig_loss_landscape} hints at this phenomenon, although the loss does decrease slightly along the low-loss path from the middle solution to the right solution.
 
 Garipov et al \cite{mode_connectivity} devise a simple method to find a low-loss tunnel between any two SGD solutions. Consider two arbitrary SGD solutions $\theta_0$ and $\theta_1$. Then, for any proposed path connecting $\theta_0$ and $\theta_1$, we will uniformly sample points from this path and evaluate the loss along this points. The goal is to find a path where the sum of these losses is the lowest. They obtained good results searching for a path $\theta_t$ defined by a quadratic Bézier curve:
 
@@ -226,7 +226,7 @@ The above bezier curve has a single free parameter, $\theta^*$. SGD can be used 
 \label{fig_mode_connectivity}
 \end{figure}
 
-Even more surprisingly, the loss landscape of deep neural networks contains planes with arbitrary patters, such as images of a bat or a cow. \cite{sightseeing} The complexity of the loss landscape has important consequences for Bayesian neural networks that are discussed in section \ref{sec_results}.
+Even more surprisingly, the loss landscape of deep neural networks contains planes with arbitrary patters, such as images of a bat or a cow \cite{sightseeing}. The complexity of the loss landscape has important consequences for Bayesian neural networks that are discussed in section \ref{sec_results}.
 
 \section{Bayesian neural network}
 
@@ -273,7 +273,7 @@ A simpler and more common way to visualize the predictions is to plot the confid
 
 All of the prior examples used the prior distribution $\theta \sim N(0, 0.1^2)$, but this choice is arbitrary. The prior acts as a regularizer, assigning more weight to some models and less weight to others. The goal of a normal prior centered around zero, with a low variance is to favor models with parameters that are small in magnitude. The smaller the magnitude of the weights, the smoother and simpler we expect the likelihood function to be. Conversely, when a neural network has weights that are large in magnitude, it is able to represent functions that are very rough.
 
-Fig. \ref{fig_1d_predictions_by_stdev} shows the posteriors obtained by varying the standard deviation of the prior. We see that a small standard deviation (i.e. an informative prior) acts as a strong regularization. A value of $0.1$ seemingly fails to capture the underlying trend in the observed data, but values $0.2, 0.5, 1, 3$ all seem reasonable. We might favor values $0.2$ and $0.5$ when we expect the underlying data generating process to be simple -- we expect that any observed trend in the data would continue to hold even for unobserved values of $x$. Values $1$ and $3$, on the other hand, represent an increased model uncertainty -- even though the observed values of $x$ have a certain trend, there might be a different trend for unobserved values of $x$. A standard deviation of $10$ takes this to the extreme, representing the belief that we cannot say almost anything at all about the trend for unobserved values of $x$. This behavior of the posterior predictive distribution in a BNN is analogous to Gaussian processes. In fact, in the infinite-width limit, some BNNs become a Gaussian process. \cite{neural_tangents}
+Fig. \ref{fig_1d_predictions_by_stdev} shows the posteriors obtained by varying the standard deviation of the prior. We see that a small standard deviation (i.e. an informative prior) acts as a strong regularization. A value of $0.1$ seemingly fails to capture the underlying trend in the observed data, but values $0.2, 0.5, 1, 3$ all seem reasonable. We might favor values $0.2$ and $0.5$ when we expect the underlying data generating process to be simple -- we expect that any observed trend in the data would continue to hold even for unobserved values of $x$. Values $1$ and $3$, on the other hand, represent an increased model uncertainty -- even though the observed values of $x$ have a certain trend, there might be a different trend for unobserved values of $x$. A standard deviation of $10$ takes this to the extreme, representing the belief that we cannot say almost anything at all about the trend for unobserved values of $x$. This behavior of the posterior predictive distribution in a BNN is analogous to Gaussian processes. In fact, in the infinite-width limit, some BNNs become a Gaussian process \cite{neural_tangents}.
 
 \begin{figure}[ht]
 \centering
@@ -333,19 +333,19 @@ First, we could approximate the true posterior distribution using a simpler dist
 \subsubsection{SWAG}
 % TODO: write about MFVI instead
 
-Stochastic Weight Averaging Gaussian (SWAG) is an efficient way to compute a Gaussian approximation around the maximum a posteriori (MAP) estimate. \cite{swag} It introduces little computational overhead over conventional SGD training and improves both accuracy and calibration. \cite{swag}
+Stochastic Weight Averaging Gaussian (SWAG) is an efficient way to compute a Gaussian approximation around the maximum a posteriori (MAP) estimate \cite{swag}. It introduces little computational overhead over conventional SGD training and improves both accuracy and calibration \cite{swag}.
 
 If we consider the geometry of the loss function around the MAP solution to be approximately Gaussian, we can exploit the SGD trajectory to fit this Gaussian approximation. The idea is that as SGD converges to the MAP solution, it will bounce around the minimum. We can take the sample of parameters after each SGD training epoch to fit a Gaussian approximation of the loss function. Since the loss function is proportional to the log-posterior distribution, the fitted Gaussian distribution is a local Gaussian approximation of the posterior around the MAP solution.
 
-The main limitation of SWAG is that it only describes a single mode of log-posterior distribution. As shown in section \ref{sec_loss_landscape}, the posterior distribution of neural networks is multi-modal. In deep neural networks, the the distributions described by each mode tend to differ in function space, so a local approximation around a single mode fails to capture the functional diversity of the posterior. \cite{deep_ens}
+The main limitation of SWAG is that it only describes a single mode of log-posterior distribution. As shown in section \ref{sec_loss_landscape}, the posterior distribution of neural networks is multi-modal. In deep neural networks, the the distributions described by each mode tend to differ in function space, so a local approximation around a single mode fails to capture the functional diversity of the posterior \cite{deep_ens}.
 
 \subsubsection{Deep ensembles}
 
 One model that takes into account the multi-modality of the posterior is a \textit{deep ensemble}. It consists of training a set of independent neural networks using SGD, where each network is initialized with different parameters and hence converges to a different mode of the posterior, and then averaging their predictions. Another way of describing this model is that the posterior over $\theta$ is a uniform categorical distribution over the independent SGD solutions.
 
-In section \ref{sec_loss_landscape}, Fig. \ref{fig_1d_ens_predictions} shows the predictions of each network in a six-network ensemble trained on a tiny regression dataset. In the figure, each network appears identical in function space, even though the parameters of each network are different. However, deeper neural networks have different behavior. In deep NNs, each mode of the posterior tends to differ from the other modes in function space. \cite{deep_ens}
+In section \ref{sec_loss_landscape}, Fig. \ref{fig_1d_ens_predictions} shows the predictions of each network in a six-network ensemble trained on a tiny regression dataset. In the figure, each network appears identical in function space, even though the parameters of each network are different. However, deeper neural networks have different behavior. In deep NNs, each mode of the posterior tends to differ from the other modes in function space \cite{deep_ens}.
 
-Empirically, a deep ensemble is more faithful approximation to the true posterior of a BNN than SWAG. \cite{bnn_posterior} Point estimates of multiple modes capture more of the functional diversity of the posterior than a local approximation around a single mode. Deep ensembles are very popular in practice, as they are simple and provide a significant increase in accuracy compared to SGD or SWAG. \cite{multiswag}
+Empirically, a deep ensemble is more faithful approximation to the true posterior of a BNN than SWAG \cite{bnn_posterior}. Point estimates of multiple modes capture more of the functional diversity of the posterior than a local approximation around a single mode. Deep ensembles are very popular in practice, as they are simple and provide a significant increase in accuracy compared to SGD or SWAG \cite{multiswag}.
 
 \subsection{Markov chain Monte Carlo}
 \label{sec_mcmc}
@@ -448,7 +448,7 @@ A(\theta'|\theta) = \min \left(1, \frac{\pi(\theta')}{\pi(\theta)} \right)
 
 The only hyperparameter of the RWMH algorithm is the covariance matrix of the proposal distribution, $\sigma^2$. The simplest choice for the covariance matrix is a constant multiplied by the identity matrix, meaning the proposals for each component are independent and have the same variance. While under some conditions, there might exist better choices of $\sigma^2$, in different conditions, these might be inferior to the simple independent proposals with constant variance. Hence, for simplicity, we will only focus on independent proposals with constant variance. Hence, the only hyperparameter that remains is a single number that represents the standard deviation of each dimension of the proposal distribution -- this is called the \textit{step size}.
 
-Setting the step size too low will result in tiny steps that always get accepted. Setting it too high will result in large steps that always get rejected. So there always exists an optimum step size which offers the best tradeoff between these qualities. In high dimensions, the optimum step size is the one that results in roughly ==TODO== acceptance probability. ==TODO: CITATION==. Proving this result is beyond the scope of this essay.
+Setting the step size too low will result in tiny steps that always get accepted. Setting it too high will result in large steps that always get rejected. So there always exists an optimum step size which offers the best tradeoff between these qualities. In high dimensions, assuming a Gaussian target distribution, the optimum step size is the one that results in roughly $23\%$ acceptance rate \cite{rwmh_scaling}.
 
 The complete RWMH algorithm is described below:
 \begin{algorithm}
@@ -464,7 +464,7 @@ The complete RWMH algorithm is described below:
 
 \subsubsection{Hamiltonian Monte Carlo}
 
-Hamiltonian Monte Carlo (HMC) exploits the geometry of the target distribution to propose arbitrarily large steps with acceptance probability exactly equal to one. \cite{hmc} This is illustrated on the right side of Fig. \ref{fig_rwmh_vs_hmc}.
+Hamiltonian Monte Carlo (HMC) exploits the geometry of the target distribution to propose arbitrarily large steps with acceptance probability exactly equal to one \cite{hmc}. This is illustrated on the right side of Fig. \ref{fig_rwmh_vs_hmc}.
 
 The idea is that instead of drawing samples directly from our target distribution $\pi(\theta)$, we define a new variable $v$, called the \textit{momentum}, and we draw samples from the joint distribution $\pi(\theta, v) := \pi(\theta)\pi(v)$. Once we have the joint samples $(\theta, v)$, we can discard the momentum $v$ and we are left with samples from our target distribution $\theta$.
 
@@ -548,7 +548,7 @@ v_t &\leftarrow v_t + \varepsilon \frac{dv_t}{dt}(t) = v_t - \varepsilon \frac{\
 \end{split}
 \end{align}
 
-However, there exists a significantly more accurate method to simulate Hamiltonian dynamics: the leapfrog algorithm. \cite{hmc} First, we do a half-step update of the momentum, then a full update of the position (using the new momentum value), and finally another half-step update of the momentum (using the new position).
+However, there exists a significantly more accurate method to simulate Hamiltonian dynamics: the leapfrog algorithm \cite{hmc}. First, we do a half-step update of the momentum, then a full update of the position (using the new momentum value), and finally another half-step update of the momentum (using the new position).
 
 \begin{align}
 \begin{split}
@@ -559,26 +559,16 @@ v_t &\leftarrow v_{t+\varepsilon/2} - \frac{\varepsilon}{2} \frac{\partial U}{\p
 \label{eq_leapfrog}
 \end{align}
 
-Conveniently, each transformation in Eq. \ref{eq_leapfrog} is a shear transformation, so the leapfrog algorithm preserves volume exactly. Also, the algorithm is time-reversible by negating $v$, running it for the same number of steps, and negating $v$ again. Both of these properties are required for Eq. \ref{eq_hmc_accept_prob} to hold. \cite{hmc}
+Conveniently, each transformation in Eq. \ref{eq_leapfrog} is a shear transformation, so the leapfrog algorithm preserves volume exactly. Also, the algorithm is time-reversible by negating $v$, running it for the same number of steps, and negating $v$ again. Both of these properties are required for Eq. \ref{eq_hmc_accept_prob} to hold \cite{hmc}.
 
 In general, HMC has three hyperparameters: step size $\sigma$, number of leapfrog steps $n$, and \textit{mass matrix} $m$. For simplicity, we only consider the use of a unit mass matrix, meaning we don't have to include it in any equations. Under some conditions, using a non-unit mass matrix might be beneficial, as it means that the momentum is updated at different rates for each parameter. However, there is no universally optimum value of the mass matrix.
 
-The product of step size with the number of steps is called the \textit{trajectory length}. It dictates the average arc length that the particle travels during Hamiltonian dynamics. If the trajectory length is too small, the particle will make tiny steps, resulting in highly correlated samples of $\theta$. On the other hand, if the trajectory length is too large, the particle might repeatedly oscillate around its origin, as if it were rolling around the trough of a deep valley. This idea is further discussed in section \ref{sec_nuts}. In practice, we might set the trajectory length roughly similar to what we would expect the standard deviation of the posterior to be. \cite{bnn_posterior} This is simple to estimate when the prior dominates the likelihood, but harder when the likelihood dominates the prior.
+The product of step size with the number of steps is called the \textit{trajectory length}. It dictates the average arc length that the particle travels during Hamiltonian dynamics. If the trajectory length is too small, the particle will make tiny steps, resulting in highly correlated samples of $\theta$. On the other hand, if the trajectory length is too large, the particle might repeatedly oscillate around its origin, as if it were rolling around the trough of a deep valley. This idea is further discussed in section \ref{sec_nuts}. In practice, we might set the trajectory length roughly similar to what we would expect the standard deviation of the posterior to be \cite{bnn_posterior}. This is simple to estimate when the prior dominates the likelihood, but harder when the likelihood dominates the prior.
 
-The computational complexity of HMC scales linearly with the number of steps. Hence, given a fixed trajectory length, we would prefer the step size to be as large as possible. However, as the step size increases, the leapfrog approximation error increases, which reduces the acceptance rate. The solution is to use a step size as large as possible while maintaining a good acceptance rate -- e.g. $80\%$. \cite{bnn_posterior}
+The computational complexity of HMC scales linearly with the number of steps. Hence, given a fixed trajectory length, we would prefer the step size to be as large as possible. However, as the step size increases, the leapfrog approximation error increases, which reduces the acceptance rate. The solution is to use a step size as large as possible while maintaining a good acceptance rate -- e.g. $80\%$ \cite{bnn_posterior}.
 
-The complete HMC algorithm is described below:
-\begin{algorithm}
-\caption{Leapfrog}
-\label{alg_leapfrog}
-\begin{algorithmic}
-\For{$i \gets 1 \ldots n_\mathrm{steps}$} \Comment{do $n_\mathrm{steps}$ steps}
-\State $v \gets v - \frac{\varepsilon}{2} \frac{\partial U}{\partial \theta}$ \Comment{do a half-step update of momentum}
-\State $\theta \gets \theta + v$ \Comment{do a full-step update of parameters}
-\State $v \gets v - \frac{\varepsilon}{2} \frac{\partial U}{\partial \theta}$ \Comment{do a half-step update of momentum}
-\EndFor
-\end{algorithmic}
-\end{algorithm}
+
+A pseudocode implementation of HMC and the leapfrog method are provided in Algorithms \ref{alg_hmc} and \ref{alg_leapfrog}.
 
 \begin{algorithm}
 \caption{HMC}
@@ -592,10 +582,22 @@ The complete HMC algorithm is described below:
 \end{algorithmic}
 \end{algorithm}
 
+\begin{algorithm}
+\caption{Leapfrog}
+\label{alg_leapfrog}
+\begin{algorithmic}
+\For{$i \gets 1 \ldots n_\mathrm{steps}$} \Comment{do $n_\mathrm{steps}$ steps}
+\State $v \gets v - \frac{\varepsilon}{2} \frac{\partial U}{\partial \theta}$ \Comment{do a half-step update of momentum}
+\State $\theta \gets \theta + v$ \Comment{do a full-step update of parameters}
+\State $v \gets v - \frac{\varepsilon}{2} \frac{\partial U}{\partial \theta}$ \Comment{do a half-step update of momentum}
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
 \subsubsection{No-U-Turn Sampler}
 \label{sec_nuts}
 
-The \textit{No-U-Turn Sampler} (NUTS) is a modification of HMC that adapts the trajectory length (by adapting the number of steps) depending on the local geometry of the target distribution. \cite{nuts} The idea is to always run Hamiltonian dynamics \textit{just long enough} -- until the point when running the simulation for any longer would result in the particle moving \textit{closer} to its origin, rather than away from it. Let $(\theta, v)$ denote the state of the particle at the start of Hamiltonian dynamics and $(\theta', v')$ denote the current state of the particle under Hamiltonian dynamics.
+The \textit{No-U-Turn Sampler} (NUTS) is a modification of HMC that adapts the trajectory length (by adapting the number of steps) depending on the local geometry of the target distribution \cite{nuts}. The idea is to always run Hamiltonian dynamics \textit{just long enough} -- until the point when running the simulation for any longer would result in the particle moving \textit{closer} to its origin, rather than away from it. Let $(\theta, v)$ denote the state of the particle at the start of Hamiltonian dynamics and $(\theta', v')$ denote the current state of the particle under Hamiltonian dynamics.
 
 We can measure the distance of $\theta'$ to $\theta$ as $||\theta'-\theta||^2$, so the stopping condition is $\frac{d}{dt} ||\theta'-\theta||^2 < 0$. When the stopping condition is reached, we say that the particle makes a \textit{U-turn}. The stopping condition can be expressed in terms of $\theta', \theta, v'$ as derived below:
 
@@ -712,7 +714,9 @@ Since NUTS is based on a balanced binary tree, it is natural to index each leaf 
 
 Also, observe that we do not need to store the value of each even leaf. Instead, for a tree of height $h$, we can get away with storing just $\log_2 h$ leafs. We can use the bit count of each even leaf to decide where in this array it should be stores. We will store leaf 0 in the 0th element of the array. We must keep this leaf indefinitely and no other leaf has bitcount 0, so this value will never get overwritten. We will store each leaf with bitcount 1 in the first element of the array. There are multiple leafs with bitcount 1, so the first element of the array will get overwritten multiple times, but each time this happens, we no longer need to keep the previous values. In general, we will store \textit{each} odd leaf as the $\text{bitcount}(i)$-th element in the array.
 
-Putting all this together, the following algorithm is a valid pseudocode implementation of \textit{Iterative NUTS}:
+Lastly, we need to consider how to grow the tree backwards, not just forwards. When growing the tree forwards, we leapfrog forwards in time from the rightmost leaf of the tree. When growing the tree backwards, we need to leapfrog backwards in time from the leftmost leaf. Leapfrogging backwards in time is equivalent to leapfrogging forwards in time but setting a a negative step size. Hence, to grow the tree in either direction, it suffices to always store only the leftmost and rightmost leaf. The direction of growth can only change when the tree doubles, in which case the only relevant leaf to store for checking U-turns is the leftmost / rightmost one. A simple way to implement this is to resample the direction each time the tree doubles and if the direction changes, simply switch the leftmost and rightmost leafs and negate the step size.
+
+Putting all this together, Algorithm \ref{alg_nuts} describes a valid (but simplified) implementation of \textit{Iterative NUTS}.
 
 \newgeometry{margin=1.5cm}
 \begin{algorithm}
@@ -779,9 +783,15 @@ Putting all this together, the following algorithm is a valid pseudocode impleme
 
 \section{Implementation}
 
-One of the strongest limitations of MCMC-based Bayesian neural networks (compared to standard neural networks) is that they are orders of magnitude computationally more expensive to train and run inference on. For this reason, it is essential that any implementation of a BNN is as computationally-efficient as possible. The implementation behind this project utilizes several related tricks to achieve this (JAX, JIT, TPUs, SPMD), which are described below.
+One of the strongest limitations of MCMC-based Bayesian neural networks (compared to standard neural networks) is that they are orders of magnitude computationally more expensive to train and run inference on \cite{bnn_posterior}. For this reason, it is essential that any implementation of a BNN be as computationally-efficient as possible. The implementation behind this project utilizes several related techniques to achieve this (JIT, TPUs, SPMD), which are described below. All computations are implemented in \textit{JAX} \cite{jax}, an open-source machine learning library developed by Google.
 
-All mathematical operations are implemented in JAX, an open-source machine learning library developed by Google. This includes the neural network, gradient-descent training, and 
+JAX is designed to work with \textit{pure} functions: functions whose only input are its input parameters and the only output is the function's returned value. A pure function cannot have any side-effects, i.e. it cannot modify any input or global variables. In order to implement pure functions, JAX relies on a pure pseudorandom number generator (PRNG). Instead of maintaining a global seed, the PRNG must be passed a \textit{key} each time we use it to draw a random number. The function for drawing random numbers is also pure: given the same key, it always produces the same output. In order to draw a new random number, the key must be \textit{split} into a new key. This greatly simplifies parallelizing code across multiple devices.  
+
+In order to reduce computation time, the computations are split across 8 Tensor Processing Unit (TPU) cores. A TPU is an application-specific integrated circuit (ASIC) developed by Google optimized to work with neural networks. Unlike Graphics Processing Units (GPUs), TPUs are deterministic, making experiments reproducible and parallelization simpler. The computations are split up across the cores using \textit{single program, multiple data} (SPMD) parallelism. Namely, the whole dataset is split into eight batches, and each batch is processed separately by a single core, using the same program -- hence the name `single program, multiple data'. The only instance when the cores need to be synchronized is when computing the likelihood -- each core uses a different dataset batch, so it arrives at a different value. Once each core computes \textit{its} likelihood, the values are synchronized across all cores and each core continues to work independently. Using all eight cores in this fashion results in more than a four-fold speedup over using a single core. 
+
+Lastly, JAX can Just-In-Time (JIT) compile Python functions in order to reduce overhead. However, using Python control flow is not allowed -- JAX's custom control flow must be used instead. Recursion is not allowed at all. Thus, for example to to JIT compile the No-U-Turn Sampler for example, it must be implemented without recursion, as an iterative algorithm.
+
+Running JIT compiled code on a single TPU core provides roughly a 100-fold speedup over the `state-of-the-art platform for high-performance statistical computation' \textit{Stan} \cite{stan}. Using SPMD parallelism across 8 TPU cores provides roughly an additional 4-fold speedup.
 
 \section{Results}
 \label{sec_results}
@@ -834,6 +844,6 @@ All mathematical operations are implemented in JAX, an open-source machine learn
 \section{Conclusion}
 
 
-\bibliographystyle{plain}
+\bibliographystyle{unsrt} % 'unsrt' style -> references are listed in the order of appearance
 \bibliography{references.bib}
 \end{document}
