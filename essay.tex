@@ -295,26 +295,36 @@ In low dimensions, the \textit{trapezoidal rule} is an intuitive method to numer
 
 However, let's say that we need to use $n$ trapezoids to approximate a $1D$-integral. Then, as the number of dimensions $d$ grows, the number of trapezoids required grows like $n^d$, i.e. exponentially. With anything but a tiny neural network, this method is infeasible.
 
-\textit{Monte Carlo simulation} is a better approach. We express the integral as an expectation over some probability distribution $p(x)$, draw samples from $p(x)$, and compute the empirical mean of $f(x)$ over the samples:
+\textit{Monte Carlo simulation} is a better approach. We express the integral as an expectation over some probability distribution $p(x)$, draw samples $X_i \sim p(x)$, and compute the empirical mean of $f(x)$ over the samples:
 
-1. sample $x_i \sim p(x)\\$
-2. $\int f(x)p(x) dx = E_x[f(x)] \approx \hat{f}_n = \frac{1}{n} \sum_{i=1}^n f(x_i)$
+\begin{equation}
+\int f(x)p(x) dx = E_x[f(x)] \approx \hat{f}_n := \frac{1}{n} \sum_{i=1}^n f(X_i)
+\end{equation}
 
 Using the strong law of large numbers and assuming $x_i$ are i.i.d.:
 
 \begin{equation}
-\mathbb{P}\left(\lim_{n \rightarrow \infty} \hat{f}_n=\mathbb{E}_{\pi}[f]\right)=1
+\mathbb{P}\left(\lim_{n \rightarrow \infty} \hat{f}_n = \mathbb{E}_{\pi}[f]\right)=1
 \end{equation}
 
-In other words, we can use $n$ i.i.d. samples from $p(x)$ to approximate $\int f(x)p(x) dx$. As $n \rightarrow \infty$, this approximation will converge almost surely to the true value of the integral. Even better, by using the central limit theorem, we get that the approximation converges as $1/\sqrt n$, i.e., its convergence rate does not depend on the number of dimensions. This is a crucial property to work in high dimensions.
+In other words, we can use $n$ i.i.d. samples from $p(x)$ to approximate $\int f(x)p(x) dx$, denoting the estimand $\hat{f}_n$. As $n \rightarrow \infty$, the estimand will converge almost surely to the true value of the integral. Even better, by using the central limit theorem, we get that the estimand converges as $1/\sqrt n$, i.e., its convergence rate does not depend on the number of dimensions. This is a crucial property to work in high dimensions.
 
-% TODO: correlation ⇒ worse MC estimate
+More realistically, we might only have access to samples from $p(x)$ that are serially dependent -- the reason behind this will become clear in section \ref{sec_mcmc}. In this case, the variance of the estimand will depend on the autocovariance of the samples $X_i$, as derived in Eq. \ref{eq_mc_var}. While it is true that a negative autocovariance of $f(X_i)$ will reduce the total variance of $\hat{f}_n$, the variance of a transformation of $f$ might increase (e.g., if $X_i$ has negative autocovariance, $X_i^2$ has positive autocovariance). For these reasons, it is preferable to get the autocorrelation of $X_i$ as close to zero as possible, so that any transformation of $X_i$ will also hopefully have autocorrelation close to zero.
+
+\begin{align}
+\begin{split}
+\text{Var} \left( \tilde{f}_n \right) &= \frac{1}{n^2} \text{Var} \left( \sum_{i=1}^n f(X_i)\right) \\
+&= \frac{1}{n^2} \text{Cov} \left( \sum_{i=1}^n f\left(X_{i}\right), \sum_{i=1}^{n} f(X_{i})\right) \\
+&=\frac{1}{n^2} \left (\sum_{i=1}^n \text{Var}(f(X_{i}))+2 \sum_{i<j} \text{Cov}(f(X_{i}), f(X_{j}))\right)
+\end{split}
+\label{eq_mc_var}
+\end{align}
 
 We can apply this technique to the posterior predictive distribution of a BNN by taking the expectation of the likelihood $p(\tilde{y}|\tilde{x},\theta)$ over the posterior $p(\theta|x,y)$. However, we must be careful about how this simulation is implemented. As described in section \ref{sec_loss_fn}, computers struggle to work with small numbers, which is why working with the logarithms of probabilities is more accurate. Unfortunately, we cannot average over $\log p(\tilde{y})$ directly, rather we must average over $p(\tilde{y})$. The naive solution would be to simply exponentiate $\log p(\tilde{y})$, but since $p(\tilde{y})$ may be close to zero, this would result in underflow. A better solution is to use the $\textrm{LogSumExp}$ function, which is a stable way to compute the logarithm of a sum of exponents. The resulting expression is derived below:
 
 \begin{align}
 \begin{split}
-p(\tilde{y}) &= E_\theta [p(\tilde{y}, \theta)] \\
+p(\tilde{y}) &= \mathbb{E}_\theta [p(\tilde{y}, \theta)] \\
 p(\tilde{y}) &\approx \sum p(\tilde{y}|\theta_i) p(\theta_i) \\
 p(\tilde{y}) &\approx \sum p(\tilde{y}|\theta_i) \frac{1}{n} \\
 p(\tilde{y}) &\approx \sum \exp \log p(\tilde{y}|\theta_i)) \frac{1}{n} \\
@@ -718,6 +728,7 @@ Lastly, we need to consider how to grow the tree backwards, not just forwards. W
 
 Putting all this together, Algorithm \ref{alg_nuts} describes a valid (but simplified) implementation of \textit{Iterative NUTS}.
 
+\newpage
 \newgeometry{margin=1.5cm}
 \begin{algorithm}
 \small
@@ -780,6 +791,7 @@ Putting all this together, Algorithm \ref{alg_nuts} describes a valid (but simpl
 \end{algorithmic}
 \end{algorithm}
 \restoregeometry
+\newpage
 
 \section{Implementation}
 
@@ -795,6 +807,10 @@ Running JIT compiled code on a single TPU core provides roughly a 100-fold speed
 
 \section{Results}
 \label{sec_results}
+
+Until now, we have only discussed the theory behind NNs and BNNs and applied them to a toy regression dataset. Here, we use a real-world dataset: the \textit{UCI Condition Based Maintenance of Naval Propulsion Plants Data Set} \cite{uci}. It is a regression dataset with 14 predictors and a single real-valued output. The goal is to benchmark the quality of predictions between a NN and a BNN and compare different approximations of a BNN posterior. Namely, we compare a NN trained using SGD, a deep ensemble (which is one of the best performing variational models \cite{bnn_posterior}), RWMH, HMC, and NUTS.
+
+
 
 \begin{figure}[ht]
 \centering
