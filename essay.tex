@@ -4,10 +4,8 @@
 \usepackage{float} % control over position of figures, tables
 \usepackage{hyperref} % references, citations
 \usepackage{graphicx} % plots
-\usepackage{amsmath} % align
+\usepackage{amsmath, amsfonts} % advanced maths
 \usepackage{algorithm, algpseudocode} % pseudocode
-\usepackage{amsfonts} % special math fonts
-\usepackage{changepage}
 \title{Learning Distributions with Neural Networks}
 \author{}
 \date{\today}
@@ -716,10 +714,8 @@ Also, observe that we do not need to store the value of each even leaf. Instead,
 
 Putting all this together, the following algorithm is a valid pseudocode implementation of \textit{Iterative NUTS}:
 
-%\begin{figure}
-%\makebox[\linewidth]{%
-%\begin{minipage}{\dimexpr\linewidth+5em}
-\begin{algorithm}%[ht]
+\newgeometry{margin=1.5cm}
+\begin{algorithm}
 \small
 \caption{Iterative NUTS}
 \label{alg_nuts}
@@ -779,8 +775,7 @@ Putting all this together, the following algorithm is a valid pseudocode impleme
 \EndFor
 \end{algorithmic}
 \end{algorithm}
-%\end{minipage}}
-%\end{figure}
+\restoregeometry
 
 \section{Implementation}
 
