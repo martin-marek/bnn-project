@@ -14,6 +14,8 @@
 
 \section{Abstract}
 
+
+
 \section{Introduction}
 
 \section{Frequentist vs Bayesian Neural Networks}
@@ -70,7 +72,7 @@ Essentially, the input to the layer $x_i$ is multiplied by a matrix $W_i$, shift
 
 Another way to visualize the MLP is as a graph of connected nodes that represent \textit{artificial neurons} (Fig. \ref{fig_mlp}). In every layer, every node is connected to every node in the previous layer and every node in the following layer (hence the name \textit{fully-connected}). We can think of the connections between the neurons as the matrix parameters $W_{jk}$, corresponding to the strength of each connection. At a very high level, this architecture is inspired by the human brain, although it has to be noted that the analogy is loose.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=6cm]{illustrations/mlp.pdf}
 \caption{}
@@ -157,7 +159,7 @@ Whether a neural network is trained to maximize the log-likelihood (i.e. find th
 
 Let's assume we observe the data in Fig. \ref{fig_1d_dataset} and try to train a neural network to model the conditional distribution $p(y | x)$.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=9cm]{plots/1d_dataset.pdf}
 \caption{}
@@ -166,7 +168,7 @@ Let's assume we observe the data in Fig. \ref{fig_1d_dataset} and try to train a
 
 We use an MLP with a single hidden layers consisting of 50 nodes and a $N(0, 0.1^2)$ prior over $\theta$ . The network outputs the tuple $(\mu, \sigma^2)$ for each observation and we assume that $y \sim N(y, \sigma^2)$. We initialize six networks like this, each with parameters drawn independently from a $N(0, 0.22^2)$ distribution. Footnote: using a larger variance to initialize the networks would cause problems with numerical stability. Afterwards, we train each network using SGD until convergence. We set the loss function proportional to the logarithm of the posterior distribution. Fig. \ref{fig_1d_ens_predictions} shows the predictions of each of these networks:
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{\includegraphics[width=18cm]{plots/1d_ens_predictions.pdf}}
 \caption{}
@@ -175,7 +177,7 @@ We use an MLP with a single hidden layers consisting of 50 nodes and a $N(0, 0.1
 
 It appears that each of these independent networks has learned the same function. However, the parameters of each network are different. This is evident from Fig. \ref{fig_1d_ens_param_distance}, which shows the $L_1$ distance between the parameters of the first network and the other five during training. At initialization, the $L_1$ norms of the parameters of each networks is between $0.18 - 0.25$ and they remain in this range after training. At initialization, the distances are all between $0.2 - 0.3$ and they only change very little during training. This implies that each of the 6 networks has converged to a different solution in the parameter space, since the distances are roughly constant and roughly equal to the norms of the parameters.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=9cm]{plots/1d_ens_param_distance.pdf}
 \caption{}
@@ -200,9 +202,9 @@ Then, any point $R$ along the surface described by $\theta_0, \theta_1, \theta_2
 R = \theta_m + x d_x + y d_y
 \end{equation}
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
-\includegraphics[width=14cm]{plots/loss_landscape.pdf}
+\includegraphics[width=12cm]{plots/loss_landscape.pdf}
 \caption{A contour plot of the value of the loss function of a single-layer MLP. The three crosses connected by dashed grey lines represent three independent SGD solutions. They define the plane along which the loss is evaluated, displayed by the contours.}
 \label{fig_loss_landscape}
 \end{figure}
@@ -219,7 +221,7 @@ Garipov et al \cite{mode_connectivity} devise a simple method to find a low-loss
 
 The above bezier curve has a single free parameter, $\theta^*$. SGD can be used to find $\theta^*$ given $\theta_0$ and $\theta_1$. For example, consider the left and middle solutions from Fig. \ref{fig_loss_landscape}, $\theta_0$ and $\theta_1$. Even though they appear to be disconnected, we can find a low-loss tunnel defined by a quadratic Bézier curve connecting them, as shown in Fig. \ref{fig_mode_connectivity}.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=12cm]{plots/mode_connectivity.pdf}
 \caption{}
@@ -244,7 +246,7 @@ The Bayesian approach takes into consideration model uncertainty. When training 
 
 Fig. \ref{fig_1d_predictions_overlaid} displays the concept of model uncertainty using a standard neural network and a Bayesian neural network. A NN trained using SGD is a single model corresponding to a single value of $\theta$. On the other hand, a BNN comprises a distribution over possible models. The right plot in Fig. \ref{fig_1d_predictions_overlaid} shows the different likelihoods for $y$ obtained by sampling $\theta$ from the posterior. The BNN does what we would intuitively like it to do: it considers that a set of different models might generate the data, and it consider all of them jointly. As we move farther away from observed data along the $x$-axis, the BNN's uncertainty increases, since we are gradually less confident about the behavior of the true model there. Conversely, the NN's confidence \textit{increases} as it moves father away from the observed data, which is undesirable. There is no reason to assume that observation far away from the observed data will continue to follow the same linear trend that it predicts.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{\includegraphics[width=16cm]{plots/1d_predictions_overlaid.pdf}}
 \caption{}
@@ -253,7 +255,7 @@ Fig. \ref{fig_1d_predictions_overlaid} displays the concept of model uncertainty
 
 A more accurate way to visualize the predictions of a BNN is to plots its probability density function (PDF), which requires marginalizing over $\theta$. In general, this cannot be done exactly, but a good approximation is to draw samples from the posterior, $\theta_i$, and average the predictions over these samples. This technique is further described in section \ref{sec_prediction}.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{\includegraphics[width=16cm]{plots/1d_predictions_pdf.pdf}}
 \caption{}
@@ -262,7 +264,7 @@ A more accurate way to visualize the predictions of a BNN is to plots its probab
 
 A simpler and more common way to visualize the predictions is to plot the confidence interval and mean estimate. One way this can be achieved is to sample $\theta_i$ from the posterior and then sample $y$ from each $\theta_i$. The empirical quantiles of the sampled values of $y$ can then be used to obtain approximate confidence intervals and an approximate mean.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{\includegraphics[width=16cm]{plots/1d_predictions_ci.pdf}}
 \caption{}
@@ -275,7 +277,7 @@ All of the prior examples used the prior distribution $\theta \sim N(0, 0.1^2)$,
 
 Fig. \ref{fig_1d_predictions_by_stdev} shows the posteriors obtained by varying the standard deviation of the prior. We see that a small standard deviation (i.e. an informative prior) acts as a strong regularization. A value of $0.1$ seemingly fails to capture the underlying trend in the observed data, but values $0.2, 0.5, 1, 3$ all seem reasonable. We might favor values $0.2$ and $0.5$ when we expect the underlying data generating process to be simple -- we expect that any observed trend in the data would continue to hold even for unobserved values of $x$. Values $1$ and $3$, on the other hand, represent an increased model uncertainty -- even though the observed values of $x$ have a certain trend, there might be a different trend for unobserved values of $x$. A standard deviation of $10$ takes this to the extreme, representing the belief that we cannot say almost anything at all about the trend for unobserved values of $x$. This behavior of the posterior predictive distribution in a BNN is analogous to Gaussian processes. In fact, in the infinite-width limit, some BNNs become a Gaussian process \cite{neural_tangents}.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{\includegraphics[width=18cm]{plots/1d_predictions_by_stdev.pdf}}
 \caption{}
@@ -378,7 +380,7 @@ In MCMC, we define a process which satisfies the markov property and thus when w
 In order to draw samples $\theta_0 \ldots \theta_{n-1}$ from a Markov chain defined by the transition kernel $p(\theta_{t+1}|\theta_t)$, we use the following algorithm:
 
 \begin{algorithm}
-\caption{Metropolis-Hastings}
+\caption{Generating samples from a Markov chain}
 \label{alg_mh}
 \begin{algorithmic}
 \State $\theta_0 \gets \theta_{\textrm{init}}$
@@ -436,7 +438,7 @@ A(\theta'|\theta) := \min \left(1, \frac{Q(\theta|\theta')\pi(\theta')}{Q(\theta
 \label{eq_accept_prob}
 \end{equation}
 
-The different flavor of Metropolis-Hastings differ only in their proposal distribution $Q(\theta'|\theta)$. The acceptance probability is always the one defined in Eq. \ref{eq_accept_prob}. A very useful property of this acceptance probability is that $\pi(\theta)$ needs to be known only up to a multiplicative constant. The posterior, as defined in Eq. \ref{eq_posterior} involves an intractable integral over $\theta$, which has potentially millions of dimensions. Fortunately, the value of this integral is constant w.r.t. $\theta$, so it cancels out in Eq. \ref{eq_accept_prob}. Hence, when working with $\pi(\theta)$, we can evaluate it as a product of the likelihood multiplied by the prior, without having to compute the evidence.
+The different flavors of Metropolis-Hastings differ only in their proposal distribution $Q(\theta'|\theta)$. The acceptance probability is always the one defined in Eq. \ref{eq_accept_prob}. A very useful property of this acceptance probability is that $\pi(\theta)$ needs to be known only up to a multiplicative constant. The posterior, as defined in Eq. \ref{eq_posterior} involves an intractable integral over $\theta$, which has potentially millions of dimensions. Fortunately, the value of this integral is constant w.r.t. $\theta$, so it cancels out in Eq. \ref{eq_accept_prob}. Hence, when working with $\pi(\theta)$, we can evaluate it as a product of the likelihood multiplied by the prior, without having to compute the evidence.
 
 The samples drawn by MCMC are dependent, by the nature of a Markov chain. However, in order to get a good approximation of the posterior predictive distribution, as described in section \ref{sec_prediction}, we would ideally like the samples to be uncorrelated. The reason behind this is that a high autocorrelation of samples implies that the chain explores the posterior slowly. If the chain is currently in $\theta$, subsequent samples from the chain will still be close to $\theta$, rather than exploring the full distribution. A different view on this is that we would prefer the chain to have a large average step size between each of its samples. In order to achieve this, we must design a proposal distribution that proposes large steps that have a high acceptance probability.
 
@@ -449,7 +451,7 @@ A(\theta'|\theta) = \min \left(1, \frac{\pi(\theta')}{\pi(\theta)} \right)
 \label{eq_rwmh_accept_prob}
 \end{equation}
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=14cm]{illustrations/rwmh_vs_hmc.pdf}
 \caption{An illustration of Random-walk Metropolis-Hastings (RWMH) on the left and Hamiltonian Monte Carlo (HMC) on the right. The current state is represented by the blue point and the proposal distribution is illustrated by the yellow line. In RWMH, the proposal's acceptance probability depends on the height difference between the proposal and the target distribution. If the proposal is significantly higher than the target distribution, it will likely get rejected. If it is lower, it will always get accepted. Meanwhile, HMC proposes samples that lie exactly on the target distribution, so they always get accepted.}
@@ -458,7 +460,7 @@ A(\theta'|\theta) = \min \left(1, \frac{\pi(\theta')}{\pi(\theta)} \right)
 
 The only hyperparameter of the RWMH algorithm is the covariance matrix of the proposal distribution, $\sigma^2$. The simplest choice for the covariance matrix is a constant multiplied by the identity matrix, meaning the proposals for each component are independent and have the same variance. While under some conditions, there might exist better choices of $\sigma^2$, in different conditions, these might be inferior to the simple independent proposals with constant variance. Hence, for simplicity, we will only focus on independent proposals with constant variance. Hence, the only hyperparameter that remains is a single number that represents the standard deviation of each dimension of the proposal distribution -- this is called the \textit{step size}.
 
-Setting the step size too low will result in tiny steps that always get accepted. Setting it too high will result in large steps that always get rejected. So there always exists an optimum step size which offers the best tradeoff between these qualities. In high dimensions, assuming a Gaussian target distribution, the optimum step size is the one that results in roughly $23\%$ acceptance rate \cite{rwmh_scaling}.
+Setting the step size too low will result in tiny steps that always get accepted. Setting it too high will result in large steps that always get rejected. So there always exists an optimum step size which offers the best tradeoff between these qualities. In high dimensions, assuming a Gaussian target distribution, the optimum step size is the one that results in roughly $23\%$ acceptance rate \cite{rwmh_accept_rate}. After optimal tuning, the computational complexity of RWMH scales linearly with the number of dimension \cite{hmc_rwmh_scaling}.
 
 The complete RWMH algorithm is described below:
 \begin{algorithm}
@@ -474,7 +476,7 @@ The complete RWMH algorithm is described below:
 
 \subsubsection{Hamiltonian Monte Carlo}
 
-Hamiltonian Monte Carlo (HMC) exploits the geometry of the target distribution to propose arbitrarily large steps with acceptance probability exactly equal to one \cite{hmc}. This is illustrated on the right side of Fig. \ref{fig_rwmh_vs_hmc}.
+Hamiltonian Monte Carlo (HMC) exploits the geometry of the target distribution to propose arbitrarily large steps with acceptance probability exactly equal to one \cite{hmc}. This is illustrated on the right side of Fig. \ref{fig_rwmh_vs_hmc}. In contrast to RWMH, the complexity of HMC scales like $d^{0.25}$ with the number of dimensions.
 
 The idea is that instead of drawing samples directly from our target distribution $\pi(\theta)$, we define a new variable $v$, called the \textit{momentum}, and we draw samples from the joint distribution $\pi(\theta, v) := \pi(\theta)\pi(v)$. Once we have the joint samples $(\theta, v)$, we can discard the momentum $v$ and we are left with samples from our target distribution $\theta$.
 
@@ -623,7 +625,7 @@ We can measure the distance of $\theta'$ to $\theta$ as $||\theta'-\theta||^2$, 
 
 It would be convenient to simply leapfrog until the particle makes a U-turn and then use the last leapfrog step as the proposal for ($\theta, v$). However, this could create a scenario where a particle traveling forwards in time stops at a different location that a particle traveling backwards in time, thus breaking detailed balance. Fig. \ref{fig_nuts_uturn_detailed_balance} illustrates one such scenario. In order to satisfy detailed balance, we must make sure that the probability of proposing $(\theta, v) \rightarrow (\theta', v')$ is the same as $(\theta', v') \rightarrow (\theta, v)$. In HMC, this was satisfied by running the (time-reversible) leapfrog algorithm for a fixed number of steps. In order for NUTS to stop when it detects a U-turn \textit{and} preserve detailed balance, it needs to operate in a more complicated fashion.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=8cm]{illustrations/nuts_uturn_detailed_balance.pdf}
 \caption{If a particle travels from $(\theta, v)$ along the dashed leapfrog trajectory, it will make a U-turn at the point $(\theta', v')$. However, if the particle started at $(\theta', v')$ and went backwards in time, it would make a U-turn at the point denoted by a large cross, not at the original starting point $(\theta, v)$.}
@@ -634,7 +636,7 @@ NUTS works by recursively growing a balanced binary tree. First, we start with t
 
 This process implicitly grows a binary tree, where each leaf represents a single state of the particle ($\theta', v'$). At each iteration of NUTS, the size of the tree is doubled: it either grows forwards or backwards by $2^i$ leafs. When the tree is grown forwards, we leapfrog forwards in time starting from the rightmost state $(\theta_\text{right}, v_\text{right})$ and append the new states to the right side of the tree. When the tree is grown backwards, we leapfrog backwards in time, starting from the leftmost state $(\theta_\text{left}, v_\text{left})$ and sequentially append the new states to the left side of the tree. The leafs of the binary tree are always indexed as $0 \ldots (n-1)$, from left to right, where $n$ is the number of leafs in the tree. This means that the index of a given leaf can change as the tree grows, since the leaf's distance from the leftmost leaf can change. Even though we alternate between growing the binary tree forwards and backwards, the resulting tree will be a consistent leapfrog path, i.e. running the leapfrog algorithm from $(\theta_\text{left}, v_\text{left})$ will always reach $(\theta_\text{right}, v_\text{right})$. Fig. \ref{fig_nuts_tree} illustrates the binary tree created after the fifth iteration of NUTS.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=16cm]{illustrations/nuts_tree.pdf}
 \caption{A binary tree that results from running NUTS for 5 iterations. It has $2^5 = 16$ leafs. The leafs are connected by arrows to indicate that the path along the leafs is a valid leapfrog trajectory: the $i$th leaf ($i \in \{0 \ldots 15\}$) is the result of running the leapfrog algorithm for $i$ steps from leaf $0$.}
@@ -643,7 +645,7 @@ This process implicitly grows a binary tree, where each leaf represents a single
 
 In each iteration of NUTS, in addition to growing the tree, we check for U-turns. More specifically, we check the U-turn condition for the leftmost and rightmost leafs of all balanced subtrees. Fig. \ref{fig_nuts_uturn_leafs} illustrates each pair of leafs that need to be checked (in tree of height $5$) by a colored line. When checking for a U-turn, we check whether continuing the Hamiltonian dynamics in \textit{either} direction would result in the distance between the leafs to decrease. When checking the pair of leafs $(\theta_\text{left}, v_\text{left})$ and $(\theta_\text{right}, v_\text{right})$, this is derived in Eq. \ref{eq_uturn_both_dirs}.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=16cm]{illustrations/nuts_uturn_leafs.pdf}
 \caption{A binary tree that results from running NUTS for 5 iterations. Colored  lines connect each pair of leafs that need to be checked for a U-turn in a tree of height $5$.}
@@ -669,7 +671,7 @@ p(\theta, v, u) \propto \mathbb{I}\left(u \in\left[0, \pi(\theta, v) \right]\rig
 
 When sampling vertically under the curve, we need to draw samples of the slice variable $u$ conditional on $(\theta, v)$. Since the joint distribution $(\theta, v, u)$ is distributed uniformly under $\pi(\theta, v)$, $u|(\theta, v)$ is also distributed uniformly under $\pi(\theta, v)$: $u|(\theta, v) \sim \text{Uniform}[0, \pi(\theta, v)]$. Similarly, in order to sample horizontally under the curve, we draw samples of $(\theta, v)$ conditional on the slice variable $u$. $(\theta, v)|u$ is distributed uniformly along the region where the slice variable falls under the curve: $(\theta, v) | u \sim \text{Uniform}\{(\theta, v), \pi(\theta, v) \geq u\}$. However, to improve numerical stability, is is better to work with $\log u$ instead of $u$. The distribution of $\log u$ is derived in Eq. \ref{eq_logu_distr}.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=7cm]{illustrations/slice_sampling.pdf}
 \caption{During slice sampling, we alternately sample vertically and horizontally from the are under the target density function. For example, starting at the blue point, we would sample vertically along the vertical orange line and arrive at the first grey point. Then we would sample horizontally along the horizontal orange line, arriving the second grey point. This alternating cycle repeats indefinitely.}
@@ -713,7 +715,7 @@ The process of building a tree is described through a nested for loop. The outer
 
 The main challenge in formulating NUTS as an iterative algorithm is to find an efficient way of checking U-turns. For example, imagine that we want to check for U-turns in a tree of height 5, as illustrated in Fig. \ref{fig_iterative_nuts_indexing}. First, notice in the figure that each pair of leafs that we check for a U-turn consists of one leaf with an odd index and one leaf with an even index. This means that as we iterate through the leafs, we can use even nodes to store temporary state and odd nodes to check for U-turns agains these previously-generated states. For example, at leaf 0, we would store its value and at leaf 1, we would check for a U-turn between leaf 0 and leaf 1. Notice that we do not need to store the value of leaf 1 because leaf 1 is not compared to any leaf with index greater than 1.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{\includegraphics[width=17cm]{illustrations/iterative_nuts_indexing.pdf}}
 \caption{The 16 nodes correspond to the leafs of a height-5 tree. Colored lines indicate which pairs of leafs need to be checked for a U-turn. Each leaf is indexed in base 10 and base 2. The last two rows show the bit count and number of trailing bits of the binary representation of each index.}
@@ -808,58 +810,104 @@ Running JIT compiled code on a single TPU core provides roughly a 100-fold speed
 \section{Results}
 \label{sec_results}
 
-Until now, we have only discussed the theory behind NNs and BNNs and applied them to a toy regression dataset. Here, we use a real-world dataset: the \textit{UCI Condition Based Maintenance of Naval Propulsion Plants Data Set} \cite{uci}. It is a regression dataset with 14 predictors and a single real-valued output. The goal is to benchmark the quality of predictions between a NN and a BNN and compare different approximations of a BNN posterior. Namely, we compare a NN trained using SGD, a deep ensemble (which is one of the best performing variational models \cite{bnn_posterior}), RWMH, HMC, and NUTS.
+Until now, we have only discussed the theory behind NNs and BNNs and applied them to a toy regression dataset. Here, we use a real-world dataset: the \textit{UCI Condition Based Maintenance of Naval Propulsion Plants Data Set} \cite{uci}. It is a regression dataset with 14 predictors and a single real-valued response variable. We use 10,740 `train' observations to fit each model and 1,194 `test' observations to assess model performance. The train and test observations are separated to obtain an unbiased estimate of model performance and discourage overfitting.
 
+The goal is to benchmark the quality of predictions between a NN and a BNN and compare different approximations of a BNN posterior. Namely, we compare a NN trained using SGD, a deep ensemble (which is one of the best performing variational models \cite{bnn_posterior}), and a BNN sampled using RWMH, HMC, and NUTS.
 
+We use an MLP with 3 hidden layers, each consisting of 50 nodes, and ReLU activation. The network outputs the mean and standard deviation of the likelihood, which is set to be normal.
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=16cm]{plots/uci_param_history.pdf}
-\caption{}
-\label{fig_uci_param_history}
-\end{figure}
+\subsection{Comparison of MCMC methods}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=15cm]{plots/uci_param_distribution.png}
-\caption{}
-\label{fig_uci_param_distribution}
-\end{figure}
+For MCMC, we generated 5 chains of length 100 using each method. Afterwards, the first 20 samples from each were discarded, since these depend heavily on the initialization rather than the target distribution -- this technique is called \textit{burn in}. In HMC, we set the step size to obtain an acceptance rate of roughly $80\%$ and the number of steps such that generating the 100 samples would take roughly 4 minutes. For NUTS, we used the same step size and set the maximum number of steps to again obtain a running time of roughly 4 minutes. For RWMH, the step size was to obtain roughly a $23\%$ acceptance rate. In order to use the same computation budget as HMC and NUTS, we sampled 3,000,000 points from the posterior and only kept 100 of them, i.e. $0.003\%$. In each method, the 5 chains had the same starting parameters, obtained by running SGD 5 times starting from a different random initialization.
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=10cm]{plots/uci_param_stdev.pdf}
-\caption{}
-\label{fig_uci_param_stdev}
-\end{figure}
+In section \ref{alg_hmc}, we established that the ideal MCMC algorithm would generate samples from the target distribution (the posterior of a BNN) with autocorrelation as close to zero as possible. Fig. \ref{fig_uci_param_autocor} shows the actual autocorrelation that we obtained using RWMH, HMC, and NUTS.
 
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \includegraphics[width=10cm]{plots/uci_param_autocor.pdf}
-\caption{}
+\caption{Sample autocorrelation. For each algorithm, the autocorrelation was estimated for each parameter of 5 independent chains and the estimates were then averaged across parameters and chains. The mean of each parameter was computed using all 5 chains, not independently for each chain as would be typically done.}
 \label{fig_uci_param_autocor}
 \end{figure}
 
-\begin{figure}[ht]
+Since the posterior has $d=5952$ dimensions, it is natural the HMC outperforms RWMH, given that HMC scales like $d^{0.25}$ and RWMH scales like $d$ \cite{hmc_rwmh_scaling}. However, the relatively poor performance of NUTS is surprising. The main reason is that NUTS never detected a single U-turn. Most likely, the posterior is so high dimensional that reaching a U-turn is very difficult. In order to reach a U-turn, we would need to use more than $2^{13} = 8192$ steps, which is both computationally intensive and causes the leapfrog error to grow. Given the same number of steps, NUTS is significantly slower than HMC because NUTS has a large overhead. In addition to leapfrogging, NUTS must check for U-turns using complex control flow. Moreover, in NUTS, most of the leapfrog steps are wasted: we leapfrog in both directions and then sample $\theta$ from a subset of the visited states.
+
+Another way to visualize the relative performance of these algorithms is by looking at the history of a single parameter from the target distribution. In Fig. \ref{fig_uci_param_history}, we see that HMC explores the target distribution much faster than RWMH, which is still faster than NUTS.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=16cm]{plots/uci_param_history.pdf}
+\caption{History of a single parameter from the target distribution. For each algorithm, 5 independent chains are displayed and each is centered using its first value. Each chain had a different initialization, so the curves only show the relative distance of each parameter from its initial position.}
+\label{fig_uci_param_history}
+\end{figure}
+
+Lastly, Fig. \ref{fig_uci_param_distribution} shows the distribution of the sampled values from the first chain using each algorithm. The values from each algorithm are close to each other since they all used SGD initialization. The key takeaway is that HMC has the largest spread since it was able to explore the target distribution the farthest.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=15cm]{plots/uci_param_distribution.png}
+\caption{All sampled values of 10 parameters from the first chain of each algorithm. Dashed vertical lines separate parameters while colors separate algorithms. The sampled values are plotted vertically as points, with positions based on values.}
+\label{fig_uci_param_distribution}
+\end{figure}
+
+\subsection{Comparison of predictive distributions}
+
+We compare the quality of the predictive distributions obtained from each model using three different metrics: point estimate accuracy, calibration, and likelihood (which combines the previous two metrics into a single value).
+
+In order to asses the quality of point estimates, we can simply look the distribution of residuals from each model, as illustrated in Fig. \ref{fig_uci_residuals_hist}. It can be seen that SGD, deep ensembles, and NUTS all have roughly similar dispersion. The residuals from RWMH are smaller, and the ones from HMC are even smaller. The average size of residuals from each model is summarized in Table \ref{table_uci_mse}.
+
+\begin{figure}[H]
 \centering
 \includegraphics[width=15cm]{plots/uci_residuals_hist.pdf}
 \caption{}
 \label{fig_uci_residuals_hist}
 \end{figure}
 
-% TODO: table: MSE
-% TODO: table: log-likelihood
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Model    & Mean squared error & St. dev. \\ \hline
+HMC      & 0.55               & 0.27     \\ \hline
+RWMH     & 3.12               & 1.27     \\ \hline
+ensemble & 3.77               & 0.24     \\ \hline
+NUTS     & 4.99               & 1.47     \\ \hline
+SGD      & 5.20               & 1.43     \\ \hline
+\end{tabular}
+\caption{Mean squared error (MSE) of each model on test data. The standard deviation of the values is obtained by comparing 5 independent chains from each model.}
+\label{table_uci_mse}
+\end{table}
 
-\begin{figure}[ht]
+Another important metric is calibration. Ideally, the uncertainty that a model predicts should match its true uncertainty about the estimated response variable. If a model consistently claims low uncertainty even though its residuals are large, it is \textit{overconfident}. Conversely, if a model has small residuals but claims high uncertainty, it is \textit{underconfident}. Ideally, the distribution of observed values matches the model's  predictive distribution exactly. If this were true then the p-values of each observation, measured using the model's predictive distribution, would be distributed uniformly between 0 and 1. In contrast, an overconfident model would have disproportionally many p-values concentrated around 0 and 1. Fig. \ref{fig_uci_residuals_pvals} shows the empirical CDF of the p-values of the observations for each model. % TODO
+
+\begin{figure}[H]
 \centering
 \includegraphics[width=15cm]{plots/uci_residuals_pvals.pdf}
 \caption{}
 \label{fig_uci_residuals_pvals}
 \end{figure}
 
+Lastly, the likelihood of the test data is a \textit{proper scoring rule}: it is maximized by reporting the true probability distribution. In order to obtain a high likelihood, the predictions must be calibrated and the residuals must be small. Table \ref{table_uci_loglike} summarizes the log-likelihood of the test data for each model. % TODO
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Model    & Log-likelihood & St. dev. \\ \hline
+HMC      & 5857           & 83       \\ \hline
+RWMH     & 4216           & 85       \\ \hline
+NUTS     & 3539           & 69       \\ \hline
+ensemble & 3456           & 23       \\ \hline
+SGD      & 3409           & 53       \\ \hline
+\end{tabular}
+\label{table_uci_loglike}
+\caption{Log-likelihood of each model on test data. The standard deviation of the values is obtained by comparing 5 independent chains from each model.}
+\end{table}
+
 \section{Conclusion}
 
 
+
+\clearpage
 \bibliographystyle{unsrt} % 'unsrt' style -> references are listed in the order of appearance
 \bibliography{references.bib}
 \end{document}
