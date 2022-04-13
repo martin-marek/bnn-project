@@ -28,11 +28,3 @@ def train_sgd(log_posterior_fn, params, n_epochs, lr_start, lr_stop):
     params, loss_history, params_history = jax.lax.fori_loop(0, n_epochs, step, (params, loss_history, params_history))
     
     return params, loss_history, params_history
-
-
-def train_ensamble(log_posterior_fn, params_init, *args):
-    @jax.vmap
-    def train_in_parallel(params):
-        return train_sgd(log_posterior_fn, params, *args)
-    return train_in_parallel(params_init)
-
