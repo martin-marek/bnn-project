@@ -20,7 +20,7 @@ def sample_from_chain(predict_fn, key, x, chain, n_samples=10_000):
     
     # generate samples
     def sample_from_node(key, params):
-        y_hat = predict_fn(x[:, None], params)
+        y_hat = predict_fn(x, params)
         mean = y_hat[:, 0]
         std = y_hat[:, 1]
         samples = mean[:, None] + std[:, None] * jax.random.normal(key, [len(x), n_samples_per_step])

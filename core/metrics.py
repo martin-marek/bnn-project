@@ -46,3 +46,24 @@ def r_hat(y):
     r_hat = jnp.sqrt((((N-1)/N)*w + (1/N)*b)/w)
     
     return r_hat
+
+
+def r_hat(chains, f):
+    """
+    Based on the paper "What Are Bayesian Neural Network Posteriors Really Like? - Appendix B"
+    chains: [num_chains x num_steps x num_params]
+    f: f(chain_node) -> [B]: transforms params to a 1D quantity of interest, eg predictive distribution
+    """
+    
+    # compute function of interest for each chain node
+    # - y.shape: [num_chains (M) x num_steps (N) x num_features (B)]
+    # y = jnp.array([[f(params) for params in chain] for chain in chains])
+    y = jax.vmap(jax.vmap(f))(chains)
+    M, N, B = y.shape
+
+    # compute variances
+    b = (N/(M-1)) * ((y.mean(axis=1, keepdims=True) - y.mean(axis=[0, 1], keepdims=True))**2).sum(axis=[0, 1])
+    w = 1/(M*(N-1)) * ((y - y.mean(axis=1, keepdims=True))**2).sum(axis=[0, 1])
+    r_hat = jnp.sqrt((((N-1)/N)*w + (1/N)*b)/w)
+    
+    return r_hat
