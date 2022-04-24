@@ -57,7 +57,6 @@ def r_hat(chains, f):
     
     # compute function of interest for each chain node
     # - y.shape: [num_chains (M) x num_steps (N) x num_features (B)]
-    # y = jnp.array([[f(params) for params in chain] for chain in chains])
     y = jax.vmap(jax.vmap(f))(chains)
     M, N, B = y.shape
 
