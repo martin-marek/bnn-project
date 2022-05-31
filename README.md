@@ -14,5 +14,4 @@ The posterior distribution is highly multi-modal and thus difficult to sample. H
 The posterior is typically sampled using Hamiltonian Monte Carlo (HMC) or the No-U-Turn Sampler (NUTS). In my experiments, NUTS never detected a single U-turn, and thus performed poorly. This would be interesting to explore further.
 ![plot](png/rwmh_vs_hmc.png)
 
-This repo includes a vectorized SPMD JAX implementation of HMC and NUTS from scratch.
-![plot](png/nuts_algorithm.png)
+My final report is available [here](essay.pdf).
