@@ -9,6 +9,5 @@ The posterior distribution is highly multi-modal and thus difficult to sample. H
 ![plot](png/loss_landscape.png)
 
 The posterior is typically sampled using Hamiltonian Monte Carlo (HMC) or the No-U-Turn Sampler (NUTS). I implemented both algorithms from scratch using SPMD parallelism in JAX.
-![plot](png/rwmh_vs_hmc.png)
 
 My final report is available [here](essay.pdf).
